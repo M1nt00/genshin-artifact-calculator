@@ -1259,6 +1259,61 @@
 
   var WHOLE = {x: 0, y: 0, w: 1, h: 1};
 
+  // ---------- OCR.space (optional cloud engine, tried first when a key is set) ----------
+  // Free key: https://ocr.space/ocrapi/freekey (email only, no card, ~25,000 reads/month).
+  // Paste it below to let photos try the cloud engine before the local one; leave empty
+  // (default) and nothing changes - only the free in-browser engine runs, same as before.
+  // The key ends up readable in this page's source, since there is no server to hide it
+  // behind; the free tier has no billing attached, so the worst case is the monthly quota
+  // running out, not a bill. When OCR.space errors, times out, or can't read everything,
+  // this quietly falls back to the local engine below - nothing is shown to the user.
+  var OCR_SPACE_KEY = "K86638267588957";
+
+  // A small, size-capped JPEG for the free tier's ~1MB upload limit.
+  function ocrSpaceImage(file, crop){
+    function make(maxSide, quality){
+      return createImageBitmap(file).then(function(bmp){
+        var c2 = crop || WHOLE;
+        var sx = Math.round(bmp.width * c2.x), sy = Math.round(bmp.height * c2.y);
+        var sw = Math.round(bmp.width * c2.w), sh = Math.round(bmp.height * c2.h);
+        var scale = Math.min(1, maxSide / Math.max(sw, sh));
+        var c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(sw * scale)); c.height = Math.max(1, Math.round(sh * scale));
+        var g = c.getContext("2d");
+        g.imageSmoothingQuality = "high";
+        g.drawImage(bmp, sx, sy, sw, sh, 0, 0, c.width, c.height);
+        if (bmp.close) bmp.close();
+        return new Promise(function(resolve){ c.toBlob(resolve, "image/jpeg", quality); });
+      });
+    }
+    return make(1400, 0.88).then(function(blob){
+      return blob.size <= 950000 ? blob : make(1000, 0.75);
+    });
+  }
+
+  function ocrSpaceRecognize(file, crop){
+    if (!OCR_SPACE_KEY) return Promise.reject(new Error("OCR.space key not set"));
+    return ocrSpaceImage(file, crop).then(function(blob){
+      var form = new FormData();
+      form.append("apikey", OCR_SPACE_KEY);
+      form.append("language", "kor");
+      form.append("scale", "true");
+      form.append("OCREngine", "1");
+      form.append("file", blob, "artifact.jpg");
+      var ctrl = new AbortController();
+      var timer = setTimeout(function(){ ctrl.abort(); }, 12000);
+      return fetch("https://api.ocr.space/parse/image", {method: "POST", body: form, signal: ctrl.signal})
+        .then(function(r){ return r.json(); })
+        .then(function(j){
+          if (!j || j.IsErroredOnProcessing || !j.ParsedResults || !j.ParsedResults[0]){
+            throw new Error((j && (Array.isArray(j.ErrorMessage) ? j.ErrorMessage.join(" ") : j.ErrorMessage)) || "OCR.space failed");
+          }
+          return j.ParsedResults[0].ParsedText || "";
+        })
+        .finally(function(){ clearTimeout(timer); });
+    });
+  }
+
   // Resolves to {texts, crop}: texts is everything that was read, crop the area of a
   // full-screen picture that was read (null for a whole-picture read).
   function runOcr(file){
@@ -1288,17 +1343,28 @@
         var scale = readW < 900 ? 2 : (readW < 1600 ? 1.5 : 1);
         var steps = [first, first === "raw" ? "bin" : "raw", "inv"];
         var texts = [], modes = [], data = null;
-        function next(k){
+        function localSteps(k){
           if (k >= steps.length || (data && isComplete(data))) return Promise.resolve({texts: texts, modes: modes});
           return pass(steps[k], scale, crop).then(function(t){
             texts.push(t);
             modes.push(steps[k]);
             var d = parseOcrText(t);
             data = data ? mergeParsed(data, d) : d;
-            return next(k + 1);
+            return localSteps(k + 1);
           });
         }
-        return next(0);
+        if (!OCR_SPACE_KEY) return localSteps(0);
+        // Cloud engine first; anything short of a complete read falls through to the
+        // local engine untouched, so a bad photo or a used-up quota never blocks the user.
+        return ocrSpaceRecognize(file, crop).then(function(t){
+          texts.push(t);
+          modes.push("ocrspace");
+          data = parseOcrText(t);
+          if (isComplete(data)) return {texts: texts, modes: modes};
+          return localSteps(0);
+        }, function(){
+          return localSteps(0);
+        });
       }
 
       if (W / H < FULLSCREEN_MIN_RATIO){
@@ -1453,12 +1519,13 @@
       var windowText = tail.slice(mt.end, mt.end + 20);
       // real substat rows are always "<stat>+<value>"; the first pass insists on the "+"
       if (strict && !/^\s*[+＋]/.test(windowText)) return null;
-      var numMatch = windowText.match(/(\d+[.,]\d+|\d+)/);
+      // the decimal point is often misread as a similar-looking mark (: · ㆍ ' etc.)
+      var numMatch = windowText.match(/(\d+[.,:·ㆍ'’]\d+|\d+)/);
       if (!numMatch) return null;
       // Percent substats always print exactly one decimal ("3.5%") and flat ones are
       // whole numbers. OCR often reads the "%" as "9", "8", "96" or "86" and glues it
       // on ("3.596"), so keep only the first decimal digit.
-      var decMatch = numMatch[1].match(/^(\d+)[.,](\d+)$/);
+      var decMatch = numMatch[1].match(/^(\d+)[.,:·ㆍ'’](\d+)$/);
       var hasDecimal = !!decMatch;
       var value = hasDecimal ? parseFloat(decMatch[1] + "." + decMatch[2].charAt(0)) : parseInt(numMatch[1], 10);
       if (isNaN(value)) return null;
