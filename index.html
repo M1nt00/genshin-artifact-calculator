@@ -484,6 +484,7 @@
 
   <footer class="site-footer">
     <p>이 사이트는 개인이 만든 팬 제작 계산기이며, 원신(Genshin Impact) 및 호요버스(HoYoverse)와 관련이 없습니다.<br>계산 결과는 참고용이며, 정확성을 보장하지 않습니다.</p>
+    <p>본 계산기는 서비스를 종료한 디스코드 봇 '푸리나'를 기반으로 제작되었습니다.</p>
     <p class="site-footer__credit">제작자 : 민트</p>
   </footer>
 </div>
@@ -766,12 +767,12 @@
   // END CHAR_TABLE
 
   var SCORE_TIERS = [
-    {min:0,  max:10,  r:"t0", label:"쓰레기"},
-    {min:10, max:30,  r:"t1", label:"강화재료"},
-    {min:30, max:50,  r:"t2", label:"임시 성유물"},
-    {min:50, max:70,  r:"t3", label:"준종결"},
-    {min:70, max:90,  r:"t4", label:"종결"},
-    {min:90, max:1e9, r:"t5", label:"비틱"}
+    {min:0,  max:10,  r:"t0", label:"5성 성유물이 맞으신가요?"},
+    {min:10, max:30,  r:"t1", label:"강화재료로 쓰세요."},
+    {min:30, max:50,  r:"t2", label:"임시로 착용하세요."},
+    {min:50, max:70,  r:"t3", label:"준종결급"},
+    {min:70, max:90,  r:"t4", label:"종결급"},
+    {min:90, max:1e9, r:"t5", label:"비틱하지 마세요."}
   ];
 
   function round(n,d){ var f=Math.pow(10,d); return Math.round((n+Number.EPSILON)*f)/f; }
