@@ -310,6 +310,87 @@
   .chip--cond{ color:var(--ink-faint); border-style:dashed; }
   .table-note{ margin:6px 0 0; font-size:0.9rem; color:var(--ink-soft); }
   .table-legend{ font-size:0.9rem; color:var(--ink-faint); }
+
+  /* ---------- info popover ---------- */
+  .info-btn{
+    display:inline-grid; place-content:center; width:20px; height:20px; margin-left:2px;
+    border-radius:50%; border:1px solid var(--border-strong); background:var(--surface-2);
+    color:var(--ink-faint); font-size:0.72rem; font-weight:700; line-height:1; cursor:pointer;
+    vertical-align:middle;
+  }
+  .info-btn:hover{ border-color:var(--accent); color:var(--accent-text); }
+  .k .info-btn{ margin-left:4px; }
+  .popover{
+    position:fixed; z-index:60; max-width:280px; padding:12px 14px; border-radius:12px;
+    background:var(--surface); border:1px solid var(--border-strong); box-shadow:var(--shadow);
+    font-size:0.88rem; color:var(--ink-soft); line-height:1.6;
+  }
+  .score-disclaimer{ margin:18px 0 0; padding-top:16px; border-top:1px solid var(--border); font-size:0.86rem; color:var(--ink-faint); line-height:1.7; }
+
+  /* ---------- genshin-flavored visual polish ---------- */
+  body{
+    background:
+      radial-gradient(1100px 620px at 12% -10%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 62%),
+      radial-gradient(900px 560px at 108% 10%, color-mix(in srgb, var(--t2) 13%, transparent), transparent 58%),
+      radial-gradient(820px 520px at 50% 118%, color-mix(in srgb, var(--t4) 9%, transparent), transparent 62%),
+      var(--bg);
+    background-attachment:fixed;
+  }
+  @media (max-width:700px){ body{ background-attachment:scroll; } }
+
+  .eyebrow::before, .eyebrow::after{ content:"◆"; font-size:0.5em; color:var(--accent); opacity:0.8; vertical-align:0.15em; }
+  .eyebrow::before{ margin-right:9px; }
+  .eyebrow::after{ margin-left:9px; }
+  .topbar h1{ position:relative; padding-bottom:16px; }
+  .topbar h1::after{
+    content:""; position:absolute; left:0; bottom:0; width:104px; height:3px; border-radius:2px;
+    background:linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 30%, transparent));
+  }
+
+  .card{
+    position:relative; overflow:hidden; border-radius:16px;
+    background:
+      radial-gradient(460px 240px at 10% -14%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 65%),
+      var(--surface);
+  }
+  .card::before{
+    content:""; position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg, transparent, var(--accent) 22%, var(--accent) 78%, transparent);
+    opacity:0.55;
+  }
+  .card h2, .dialog h2{ font-family:'Gowun Batang','Noto Sans KR',serif; letter-spacing:-0.01em; }
+  .card h2::before, .dialog h2::before{ content:"◆"; font-size:0.6em; color:var(--accent); opacity:0.85; margin-right:9px; vertical-align:0.1em; }
+  .result__label{ font-family:'Gowun Batang','Noto Sans KR',serif; }
+
+  .slot-btn.active::before{ content:"◆"; font-size:0.62em; margin-right:6px; opacity:0.85; vertical-align:0.12em; }
+
+  .result__score .num{ text-shadow:0 0 26px color-mix(in srgb, currentColor 45%, transparent); }
+  .gauge-fill{
+    background:linear-gradient(160deg,
+      color-mix(in srgb, var(--fill, var(--border-strong)) 80%, white 20%) 0%,
+      var(--fill, var(--border-strong)) 55%,
+      color-mix(in srgb, var(--fill, var(--border-strong)) 78%, black 22%) 100%);
+    box-shadow:0 0 14px 0 color-mix(in srgb, var(--fill, transparent) 55%, transparent);
+  }
+  .pill{
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, currentColor 35%, transparent),
+      0 2px 10px -2px color-mix(in srgb, currentColor 45%, transparent);
+  }
+
+  .apply-btn{
+    background:linear-gradient(135deg,
+      color-mix(in srgb, var(--accent) 88%, white 12%) 0%, var(--accent) 55%,
+      color-mix(in srgb, var(--accent) 85%, black 15%) 100%);
+    box-shadow:0 4px 16px -4px color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+  .apply-btn:hover{ box-shadow:0 6px 20px -4px color-mix(in srgb, var(--accent) 65%, transparent); }
+  .photo-btn{ box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent); }
+
+  .foot-actions{ margin-top:26px; padding-top:22px; border-top:1px solid var(--border); }
+  .site-footer{ margin-top:26px; padding:0 8px; text-align:center; }
+  .site-footer p{ margin:0 0 6px; font-size:0.78rem; line-height:1.6; color:var(--ink-faint); }
+  .site-footer__credit{ font-size:0.8rem; font-weight:600; color:var(--ink-soft); }
 </style>
 
 <div class="wrap">
@@ -321,7 +402,7 @@
   <div class="card">
     <h2>캐릭터 선택</h2>
     <div class="char-search">
-      <input type="text" id="charSearch" list="charList" placeholder="캐릭터 이름 검색 (예: 호두)" autocomplete="off">
+      <input type="text" id="charSearch" list="charList" placeholder="캐릭터 이름 검색" autocomplete="off">
       <datalist id="charList"></datalist>
     </div>
     <div class="char-confirm" id="charConfirm"></div>
@@ -357,8 +438,7 @@
   </div>
 
   <div class="card" id="corrCard">
-    <h2>보정</h2>
-    <p class="hint">유효한 옵션이지만 타 옵션에 비해 효율이 떨어지는 경우 선택</p>
+    <h2>보정 <button class="info-btn" type="button" data-info="corr" aria-label="보정 설명 보기">?</button></h2>
     <div id="corrList"></div>
   </div>
 
@@ -391,22 +471,24 @@
       <span style="left:0">0</span><span style="left:10%">10</span><span style="left:30%">30</span><span style="left:50%">50</span><span style="left:70%">70</span><span style="left:90%">90</span><span style="left:100%">100</span>
     </div>
     <div class="stat-row">
-      <div class="item"><div class="k">부옵션 효율</div><div class="v mono" id="efficiency">0.0</div></div>
-      <div class="item"><div class="k">치명타 붙은 횟수</div><div class="v mono" id="critCount">0.0</div></div>
+      <div class="item"><div class="k">부옵션 효율 <button class="info-btn" type="button" data-info="eff" aria-label="부옵션 효율 설명 보기">?</button></div><div class="v mono" id="efficiency">0.0</div></div>
+      <div class="item"><div class="k">치명타 붙은 횟수 <button class="info-btn" type="button" data-info="crit" aria-label="치명타 붙은 횟수 설명 보기">?</button></div><div class="v mono" id="critCount">0.0</div></div>
     </div>
-    <div class="notes">
-      <p>◆ 치명타 붙은 횟수 : 부옵션에 치명타 관련 옵션이 몇번 붙었는지 확인합니다.</p>
-      <p>◆ 부옵션 효율 : 옵션이 얼마나 잘 붙었는지 효율로 나타냅니다.</p>
-      <p>※ 치명타 옵션 사용중인 캐릭터는 치명타 붙은 횟수가 5를 넘어야 종결 취급<br>(단, 치명타가 주옵션에 해당하는 왕관은 4 이상)</p>
-      <p class="notes__warn">성유물 평가 점수는 주관적 요소이며, 절대적인 지표가 될 수 없습니다. 세트효과 및 주옵션이 캐릭터와 맞지 않으면 점수는 무효입니다.</p>
-    </div>
+    <p class="score-disclaimer">성유물 평가 점수는 주관적 요소이며, 절대적인 지표가 될 수 없습니다. 세트효과 및 주옵션이 캐릭터와 맞지 않으면 점수는 무효입니다.</p>
   </div>
 
   <div class="foot-actions">
     <button class="foot-btn" id="methodBtn" type="button">성유물 계산 방식</button>
     <button class="foot-btn" id="tableBtn" type="button">성유물 유효옵션 캐릭터표</button>
   </div>
+
+  <footer class="site-footer">
+    <p>이 사이트는 개인이 만든 팬 제작 계산기이며, 원신(Genshin Impact) 및 호요버스(HoYoverse)와 관련이 없습니다.<br>계산 결과는 참고용이며, 정확성을 보장하지 않습니다.</p>
+    <p class="site-footer__credit">제작자 : 민트</p>
+  </footer>
 </div>
+
+<div class="popover" id="infoPopover" role="tooltip" hidden></div>
 
 <div class="modal" id="photoModal" role="dialog" aria-modal="true" aria-label="원본 사진" hidden>
   <button class="modal__close" id="photoModalClose" type="button" aria-label="닫기">✕</button>
@@ -419,7 +501,7 @@
     <h2 id="methodTitle">성유물 계산 방식</h2>
 
     <h3>1. 부옵션 평균값</h3>
-    <p>부옵션이 한 번 강화될 때 붙는 수치의 평균값을 기준으로 삼아요. 옵션 수치를 이 평균값으로 나누면, 평균적으로 몇 번 강화된 것과 같은지 알 수 있어요.</p>
+    <p>부옵션이 한 번 강화될 때 붙는 수치의 평균값을 기준으로 삼습니다. 옵션 수치를 이 평균값으로 나누면, 평균적으로 몇 번 강화된 것과 같은지 알 수 있습니다.</p>
     <table class="avg-table">
       <thead><tr><th>옵션</th><th>평균값</th></tr></thead>
       <tbody>
@@ -437,16 +519,16 @@
     </table>
 
     <h3>2. 유효옵션 점수</h3>
-    <p>유효로 체크한 옵션만 점수에 더해요.</p>
+    <p>유효로 체크한 옵션만 점수에 더합니다.</p>
     <ul>
       <li><b>% 옵션, 원소마스터리</b> : 수치 ÷ 평균값</li>
-      <li><b>고정 수치 옵션 (공격력·HP·방어력)</b> : 캐릭터의 기초 스탯(Lv.90, 무기 제외)을 반영해서 환산해요.</li>
+      <li><b>고정 수치 옵션 (공격력·HP·방어력)</b> : 캐릭터의 기초 스탯(Lv.90, 무기 제외)을 반영해서 환산합니다.</li>
     </ul>
     <div class="formula">(수치 ÷ 평균값) ÷ 기초 스탯 × 100 ÷ 기준값<br>기준값 : 공격력·HP는 4.975, 방어력은 6.2</div>
-    <p>기초 스탯이 큰 캐릭터일수록 고정 수치 옵션의 점수가 낮게 계산돼요.</p>
+    <p>기초 스탯이 큰 캐릭터일수록 고정 수치 옵션의 점수가 낮게 계산됩니다.</p>
 
     <h3>3. 보정</h3>
-    <p>공격력·HP·원소마스터리 중 유효하긴 하지만 다른 옵션에 비해 효율이 떨어지는 경우, 보정을 선택하면 그 옵션(% 옵션과 고정 수치 모두)의 점수를 절반(×0.5)으로 계산해요.</p>
+    <p>공격력·HP·원소마스터리 중 유효하긴 하지만 다른 옵션에 비해 효율이 떨어지는 경우, 보정을 선택하면 그 옵션(% 옵션과 고정 수치 모두)의 점수를 절반(×0.5)으로 계산합니다.</p>
 
     <h3>4. 최종 점수</h3>
     <div class="formula">합산 점수 = 유효옵션 점수의 합 × 10<br>최종 점수 = 합산 점수 ÷ 부위 기준값 × 100</div>
@@ -455,21 +537,11 @@
       <li>시간의 모래 : 90</li>
       <li>공간의 성배 · 이성의 왕관 : 80</li>
     </ul>
-    <p>부위 기준값을 넘으면 100점을 넘을 수도 있어요.</p>
+    <p>부위 기준값을 넘으면 100점을 넘을 수도 있습니다.</p>
 
-    <h3>5. 등급</h3>
-    <ul>
-      <li>10점 미만 : 쓰레기</li>
-      <li>10점 이상 : 강화재료</li>
-      <li>30점 이상 : 임시 성유물</li>
-      <li>50점 이상 : 준종결</li>
-      <li>70점 이상 : 종결</li>
-      <li>90점 이상 : 비틱</li>
-    </ul>
-
-    <h3>6. 부옵션 효율, 치명타 붙은 횟수</h3>
+    <h3>5. 부옵션 효율, 치명타 붙은 횟수</h3>
     <div class="formula">부옵션 효율 = (모든 부옵션의 수치 ÷ 평균값)의 합 × 10<br>치명타 붙은 횟수 = 치명타 확률 ÷ 3.3 + 치명타 피해 ÷ 6.6</div>
-    <p>유효로 체크했는지와 상관없이 부옵션 4개를 모두 계산해요.</p>
+    <p>유효로 체크했는지와 상관없이 부옵션 4개를 모두 계산합니다.</p>
   </div>
 </div>
 
@@ -559,7 +631,8 @@
     ["행추","Xingqiu",10222,201,757],["신염","Xinyan",11201,248,798],["야에 미코","Yae Miko",10372,339,568],
     ["연비","Yanfei",9352,240,586],["요요","Yaoyao",12288,212,750],["야란","Yelan",14450,243,547],
     ["요이미야","Yoimiya",10164,322,614],["유메미즈키 미즈키","Yumemizuki Mizuki",12735,215,757],
-    ["운근","Yun Jin",10657,191,734],["종려","Zhongli",14695,251,737],["자백","Zibai",12919,224,956]
+    ["운근","Yun Jin",10657,191,734],["종려","Zhongli",14695,251,737],["자백","Zibai",12919,224,956],
+    ["베스나","Vesna",13262,354,730],["보댜니차","Vodyanitsa",14818,108,484]
   ].map(function(a){ return {ko:a[0], en:a[1], hp:a[2], atk:a[3], def:a[4]}; });
 
   // BEGIN CHAR_BUILDS - generated from 성유물 점수 유효옵션 캐릭터표.md
@@ -683,11 +756,13 @@
     "유메미즈키 미즈키":{v:["em","er","atk_pct","atk_flat"],h:["atk"]},
     "운근":{v:["er","def_pct","def_flat"],h:[]},
     "종려":{v:["cr","cd","er","atk_pct","atk_flat","hp_pct","hp_flat"],h:[]},
-    "자백":{v:["cr","cd","er","def_pct","def_flat"],h:[]}
+    "자백":{v:["cr","cd","er","def_pct","def_flat"],h:[]},
+    "베스나":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:[]},
+    "보댜니차":{v:["er","hp_pct","hp_flat"],h:[]}
   };
   // END CHAR_BUILDS
   // BEGIN CHAR_TABLE - the memo, generated from 성유물 점수 유효옵션 캐릭터표.md
-  var CHAR_TABLE = [{"title": "공격력%, 공격력", "groups": [["다이루크", "클레", "요이미야", "데히야", "리니", "아를레키노", "마비카", "두린", "니콜"], ["엠버", "향릉", "신염", "연비", "가명"], ["모나", "타르탈리아", "카미사토 아야토", "행추"], ["진", "벤티", "소", "방랑자", "한운", "차스카", "사유", "시카노인 헤이조", "파루잔", "리넷", "남연", "이파", "야호다", "바르카", "프루네"], ["각청", "라이덴 쇼군", "야에 미코", "클로린드", "바레사", "이네파", "플린스", "리사", "레이저", "북두", "피슬", "쿠죠 사라", "도리", "세토스", "올로룬", "얀사"], ["에밀리", "키니치", "콜레이", "카베"], ["치치", "감우", "유라", "카미사토 아야카", "신학", "라이오슬리", "케이아", "중운", "로자리아", "프레미네", "샤를로트", "에일로이", "에스코피에", "스커크", "로엔"], ["종려", "나비아", "응광"], ["산드로네", "알료샤", "오데트"]], "notes": []}, {"title": "공격력%, 공격력 (유효하나 효율 떨어짐 / ×0.5 보정)", "groups": [["나히다", "타이나리", "알하이탐", "사이노", "산고노미야 코코미", "노엘", "알베도", "아라타키 이토", "치오리", "호두", "카에데하라 카즈하", "시틀라리", "유메미즈키 미즈키", "네페르"]], "notes": []}, {"title": "방어력%, 방어력", "groups": [["신염"], ["알베도", "아라타키 이토", "치오리", "실로닌", "노엘", "운근", "고로", "카치나", "자백", "린네아"]], "notes": []}, {"title": "HP%, HP", "groups": [["호두", "데히야", "토마", "슈브르즈", "베넷"], ["산고노미야 코코미", "야란", "닐루", "느비예트", "푸리나", "시그윈", "말라니", "콜롬비나", "바바라", "캔디스", "달리아"], ["쿠키 시노부", "도리"], ["백출", "요요", "키라라"], ["디오나", "레일라", "미카"], ["종려"]], "notes": []}, {"title": "HP%, HP (유효하나 효율 떨어짐 / ×0.5 보정)", "groups": [["카미사토 아야토"]], "notes": []}, {"title": "치명타확률", "groups": [["다이루크", "클레", "호두", "요이미야", "데히야", "리니", "아를레키노", "마비카", "두린"], ["모나", "타르탈리아", "카미사토 아야토", "야란", "느비예트", "푸리나", "말라니", "콜롬비나"], ["닐루(6돌)", "시그윈(4돌이상)"], ["진", "벤티", "소", "방랑자", "차스카", "바르카"], ["카에데하라 카즈하(6돌)", "한운(6돌)"], ["각청", "라이덴 쇼군", "야에 미코", "사이노", "클로린드", "바레사", "이네파", "플린스"], ["타이나리", "나히다", "알하이탐", "에밀리", "키니치", "라우마(6돌)", "네페르"], ["감우", "유라", "카미사토 아야카", "라이오슬리", "시틀라리", "에스코피에", "스커크"], ["종려", "알베도", "아라타키 이토", "나비아", "치오리"], ["엠버", "향릉", "신염", "연비", "가명"], ["행추", "캔디스", "아이노"], ["사유", "시카노인 헤이조", "파루잔", "리넷", "남연", "이파"], ["리사", "레이저", "북두", "피슬", "쿠죠 사라", "도리", "세토스", "올로룬"], ["콜레이", "카베"], ["케이아", "중운", "로자리아", "프레미네", "에일로이", "로엔"], ["실로닌(6돌)", "응광", "노엘", "카치나", "자백", "일루가", "린네아"], ["산드로네", "알료샤", "오데트"]], "notes": []}, {"title": "치명타피해", "groups": [["다이루크", "클레", "호두", "요이미야", "데히야", "리니", "아를레키노", "마비카", "두린"], ["모나", "타르탈리아", "카미사토 아야토", "야란", "느비예트", "푸리나", "말라니", "콜롬비나"], ["닐루(6돌)", "시그윈(4돌이상)"], ["벤티", "소", "방랑자", "차스카", "바르카"], ["카에데하라 카즈하(6돌)", "한운(6돌)"], ["각청", "라이덴 쇼군", "야에 미코", "사이노", "클로린드", "바레사", "이네파", "플린스"], ["타이나리", "나히다", "알하이탐", "에밀리", "키니치", "라우마(6돌)", "네페르"], ["감우", "유라", "카미사토 아야카", "라이오슬리", "시틀라리", "에스코피에", "스커크"], ["종려", "알베도", "아라타키 이토", "나비아", "치오리"], ["엠버", "향릉", "신염", "연비", "가명"], ["행추", "아이노"], ["시카노인 헤이조", "파루잔", "리넷", "남연", "이파"], ["리사", "레이저", "북두", "피슬", "쿠죠 사라", "도리", "세토스", "올로룬"], ["콜레이", "카베"], ["케이아", "중운", "로자리아", "프레미네", "에일로이", "로엔"], ["실로닌(6돌)", "응광", "노엘", "카치나", "자백", "린네아"], ["산드로네", "오데트"]], "notes": []}, {"title": "원소충전효율", "groups": [["호두", "요이미야", "데히야", "리니", "아를레키노", "두린", "니콜"], ["향릉", "베넷", "신염", "연비", "토마", "슈브르즈", "가명", "엠버"], ["모나", "타르탈리아", "산고노미야 코코미", "카미사토 아야토", "야란", "닐루", "느비예트", "푸리나", "시그윈", "말라니", "콜롬비나", "행추", "캔디스", "바바라", "달리아", "아이노"], ["진", "벤티", "소", "카에데하라 카즈하", "방랑자", "한운", "차스카", "유메미즈키 미즈키", "프루네"], ["설탕", "사유", "시카노인 헤이조", "파루잔", "리넷", "남연", "이파", "야호다"], ["라이덴 쇼군", "야에 미코", "사이노", "클로린드", "바레사", "이네파", "플린스"], ["리사", "북두", "쿠죠 사라", "도리", "세토스", "쿠키 시노부", "올로룬", "얀사"], ["타이나리", "나히다", "알하이탐", "백출", "에밀리", "키니치", "라우마", "네페르"], ["콜레이", "요요", "카베", "키라라"], ["치치", "감우", "유라", "카미사토 아야카", "신학", "시틀라리"], ["케이아", "중운", "디오나", "로자리아", "레일라", "미카", "프레미네", "샤를로트", "에일로이", "에스코피에", "로엔"], ["종려", "알베도", "아라타키 이토", "나비아", "실로닌"], ["고로", "운근", "카치나", "자백", "일루가", "린네아"], ["산드로네", "알료샤", "오데트(4돌이상)"]], "notes": ["※ 캐릭터의 원소충전효율이 130% 이상 필요한 경우 유효옵션으로 간주합니다."]}, {"title": "원소마스터리", "groups": [["호두", "데히야", "마비카", "향릉", "가명", "토마", "엠버"], ["말라니", "아이노"], ["카에데하라 카즈하", "벤티", "유메미즈키 미즈키", "설탕", "사유"], ["사이노", "이네파", "리사", "피슬", "레이저", "쿠키 시노부", "세토스"], ["타이나리", "나히다", "알하이탐", "라우마", "네페르", "콜레이", "요요", "카베", "키라라"], ["감우", "시틀라리", "로자리아"], ["일루가", "린네아"], ["산드로네", "오데트"]], "notes": []}, {"title": "원소마스터리 보정 (유효하나 효율 떨어짐 / ×0.5 보정)", "groups": [["아를레키노", "다이루크", "요이미야", "연비", "클레"], ["야에 미코", "각청", "클로린드", "플린스", "올로룬"], ["카미사토 아야토", "타르탈리아", "산고노미야 코코미", "닐루"], ["라이오슬리", "에일로이"], ["차스카", "남연", "이파"]], "notes": []}];
+  var CHAR_TABLE = [{"title": "공격력%, 공격력", "groups": [["다이루크", "클레", "요이미야", "데히야", "리니", "아를레키노", "마비카", "두린", "니콜"], ["엠버", "향릉", "신염", "연비", "가명"], ["모나", "타르탈리아", "카미사토 아야토", "행추"], ["진", "벤티", "소", "방랑자", "한운", "차스카", "사유", "시카노인 헤이조", "파루잔", "리넷", "남연", "이파", "야호다", "바르카", "프루네"], ["각청", "라이덴 쇼군", "야에 미코", "클로린드", "바레사", "이네파", "플린스", "리사", "레이저", "북두", "피슬", "쿠죠 사라", "도리", "세토스", "올로룬", "얀사"], ["에밀리", "키니치", "콜레이", "카베"], ["치치", "감우", "유라", "카미사토 아야카", "신학", "라이오슬리", "케이아", "중운", "로자리아", "프레미네", "샤를로트", "에일로이", "에스코피에", "스커크", "로엔"], ["종려", "나비아", "응광"], ["산드로네", "알료샤", "오데트", "베스나"]], "notes": []}, {"title": "공격력%, 공격력 (유효하나 효율 떨어짐 / ×0.5 보정)", "groups": [["나히다", "타이나리", "알하이탐", "사이노", "산고노미야 코코미", "노엘", "알베도", "아라타키 이토", "치오리", "호두", "카에데하라 카즈하", "시틀라리", "유메미즈키 미즈키", "네페르"]], "notes": []}, {"title": "방어력%, 방어력", "groups": [["신염"], ["알베도", "아라타키 이토", "치오리", "실로닌", "노엘", "운근", "고로", "카치나", "자백", "린네아"]], "notes": []}, {"title": "HP%, HP", "groups": [["호두", "데히야", "토마", "슈브르즈", "베넷"], ["산고노미야 코코미", "야란", "닐루", "느비예트", "푸리나", "시그윈", "말라니", "콜롬비나", "바바라", "캔디스", "달리아"], ["쿠키 시노부", "도리"], ["백출", "요요", "키라라"], ["디오나", "레일라", "미카"], ["종려", "보댜니차"]], "notes": []}, {"title": "HP%, HP (유효하나 효율 떨어짐 / ×0.5 보정)", "groups": [["카미사토 아야토"]], "notes": []}, {"title": "치명타확률", "groups": [["다이루크", "클레", "호두", "요이미야", "데히야", "리니", "아를레키노", "마비카", "두린"], ["모나", "타르탈리아", "카미사토 아야토", "야란", "느비예트", "푸리나", "말라니", "콜롬비나"], ["닐루(6돌)", "시그윈(4돌이상)"], ["진", "벤티", "소", "방랑자", "차스카", "바르카"], ["카에데하라 카즈하(6돌)", "한운(6돌)"], ["각청", "라이덴 쇼군", "야에 미코", "사이노", "클로린드", "바레사", "이네파", "플린스"], ["타이나리", "나히다", "알하이탐", "에밀리", "키니치", "라우마(6돌)", "네페르"], ["감우", "유라", "카미사토 아야카", "라이오슬리", "시틀라리", "에스코피에", "스커크"], ["종려", "알베도", "아라타키 이토", "나비아", "치오리"], ["엠버", "향릉", "신염", "연비", "가명"], ["행추", "캔디스", "아이노"], ["사유", "시카노인 헤이조", "파루잔", "리넷", "남연", "이파"], ["리사", "레이저", "북두", "피슬", "쿠죠 사라", "도리", "세토스", "올로룬"], ["콜레이", "카베"], ["케이아", "중운", "로자리아", "프레미네", "에일로이", "로엔"], ["실로닌(6돌)", "응광", "노엘", "카치나", "자백", "일루가", "린네아"], ["산드로네", "알료샤", "오데트", "베스나"]], "notes": []}, {"title": "치명타피해", "groups": [["다이루크", "클레", "호두", "요이미야", "데히야", "리니", "아를레키노", "마비카", "두린"], ["모나", "타르탈리아", "카미사토 아야토", "야란", "느비예트", "푸리나", "말라니", "콜롬비나"], ["닐루(6돌)", "시그윈(4돌이상)"], ["벤티", "소", "방랑자", "차스카", "바르카"], ["카에데하라 카즈하(6돌)", "한운(6돌)"], ["각청", "라이덴 쇼군", "야에 미코", "사이노", "클로린드", "바레사", "이네파", "플린스"], ["타이나리", "나히다", "알하이탐", "에밀리", "키니치", "라우마(6돌)", "네페르"], ["감우", "유라", "카미사토 아야카", "라이오슬리", "시틀라리", "에스코피에", "스커크"], ["종려", "알베도", "아라타키 이토", "나비아", "치오리"], ["엠버", "향릉", "신염", "연비", "가명"], ["행추", "아이노"], ["시카노인 헤이조", "파루잔", "리넷", "남연", "이파"], ["리사", "레이저", "북두", "피슬", "쿠죠 사라", "도리", "세토스", "올로룬"], ["콜레이", "카베"], ["케이아", "중운", "로자리아", "프레미네", "에일로이", "로엔"], ["실로닌(6돌)", "응광", "노엘", "카치나", "자백", "린네아"], ["산드로네", "오데트", "베스나"]], "notes": []}, {"title": "원소충전효율", "groups": [["호두", "요이미야", "데히야", "리니", "아를레키노", "두린", "니콜"], ["향릉", "베넷", "신염", "연비", "토마", "슈브르즈", "가명", "엠버"], ["모나", "타르탈리아", "산고노미야 코코미", "카미사토 아야토", "야란", "닐루", "느비예트", "푸리나", "시그윈", "말라니", "콜롬비나", "행추", "캔디스", "바바라", "달리아", "아이노"], ["진", "벤티", "소", "카에데하라 카즈하", "방랑자", "한운", "차스카", "유메미즈키 미즈키", "프루네"], ["설탕", "사유", "시카노인 헤이조", "파루잔", "리넷", "남연", "이파", "야호다"], ["라이덴 쇼군", "야에 미코", "사이노", "클로린드", "바레사", "이네파", "플린스"], ["리사", "북두", "쿠죠 사라", "도리", "세토스", "쿠키 시노부", "올로룬", "얀사"], ["타이나리", "나히다", "알하이탐", "백출", "에밀리", "키니치", "라우마", "네페르"], ["콜레이", "요요", "카베", "키라라"], ["치치", "감우", "유라", "카미사토 아야카", "신학", "시틀라리"], ["케이아", "중운", "디오나", "로자리아", "레일라", "미카", "프레미네", "샤를로트", "에일로이", "에스코피에", "로엔"], ["종려", "알베도", "아라타키 이토", "나비아", "실로닌"], ["고로", "운근", "카치나", "자백", "일루가", "린네아"], ["산드로네", "알료샤", "오데트(4돌이상)", "베스나", "보댜니차"]], "notes": ["※ 캐릭터의 원소충전효율이 130% 이상 필요한 경우 유효옵션으로 간주합니다."]}, {"title": "원소마스터리", "groups": [["호두", "데히야", "마비카", "향릉", "가명", "토마", "엠버"], ["말라니", "아이노"], ["카에데하라 카즈하", "벤티", "유메미즈키 미즈키", "설탕", "사유"], ["사이노", "이네파", "리사", "피슬", "레이저", "쿠키 시노부", "세토스"], ["타이나리", "나히다", "알하이탐", "라우마", "네페르", "콜레이", "요요", "카베", "키라라"], ["감우", "시틀라리", "로자리아"], ["일루가", "린네아"], ["산드로네", "오데트", "베스나"]], "notes": []}, {"title": "원소마스터리 보정 (유효하나 효율 떨어짐 / ×0.5 보정)", "groups": [["아를레키노", "다이루크", "요이미야", "연비", "클레"], ["야에 미코", "각청", "클로린드", "플린스", "올로룬"], ["카미사토 아야토", "타르탈리아", "산고노미야 코코미", "닐루"], ["라이오슬리", "에일로이"], ["차스카", "남연", "이파"]], "notes": []}];
   // END CHAR_TABLE
 
   var SCORE_TIERS = [
@@ -872,7 +947,7 @@
     scoreEl.style.color = "";
     var gaugeFill = document.getElementById("gaugeFill");
     gaugeFill.style.width = "0%";
-    gaugeFill.style.background = "";
+    gaugeFill.style.removeProperty("--fill");
     document.getElementById("gradePill").hidden = true;
     document.getElementById("gradeLabel").textContent = "";
   }
@@ -929,7 +1004,7 @@
     var label = tier.label;
     var tierColor = "var(--"+tier.r+")";
     scoreEl.style.color = tierColor;
-    gaugeFill.style.background = tierColor;
+    gaugeFill.style.setProperty("--fill", tierColor);
     gradePill.hidden = false;
     gradePill.style.color = tierColor;
     gradePill.style.background = "color-mix(in srgb, "+tierColor+" 16%, transparent)";
@@ -1511,8 +1586,43 @@
       if (e.target === m || e.target.closest(".modal__close, .dialog__close")) closeModal();
     });
   });
-  document.addEventListener("keydown", function(e){ if (e.key === "Escape") closeModal(); });
+  document.addEventListener("keydown", function(e){ if (e.key === "Escape"){ closeModal(); closeInfo(); } });
   photoViewBtn.addEventListener("click", function(){ openModal(photoModal, photoViewBtn); });
+
+  // ---------- info popover (보정 / 부옵션 효율 / 치명타 붙은 횟수) ----------
+  var INFO_TEXT = {
+    corr: "유효한 옵션이지만 타 옵션에 비해 효율이 떨어지는 경우 선택합니다. 선택한 옵션은 점수를 절반(×0.5)으로 계산합니다.",
+    eff: "부옵션이 얼마나 잘 붙었는지 나타내는 값입니다. 유효로 체크했는지와 상관없이 부옵션 4개를 모두 계산합니다.",
+    crit: "부옵션에 치명타 확률·피해가 몇 번 붙었는지 보여줍니다. 치명타 옵션을 쓰는 캐릭터는 이 값이 5를 넘어야 종결로 봅니다. (단, 치명타가 주옵션인 왕관은 4 이상)"
+  };
+  var infoPopover = document.getElementById("infoPopover");
+  var infoOpenBtn = null;
+  function closeInfo(){
+    if (!infoOpenBtn) return;
+    infoPopover.hidden = true;
+    infoOpenBtn.setAttribute("aria-expanded", "false");
+    infoOpenBtn = null;
+  }
+  function openInfo(btn){
+    infoPopover.textContent = INFO_TEXT[btn.dataset.info] || "";
+    infoPopover.hidden = false;
+    infoOpenBtn = btn;
+    btn.setAttribute("aria-expanded", "true");
+    var r = btn.getBoundingClientRect();
+    var pw = infoPopover.offsetWidth;
+    var left = Math.min(Math.max(8, r.left + r.width / 2 - pw / 2), window.innerWidth - pw - 8);
+    var top = r.bottom + 8;
+    if (top + infoPopover.offsetHeight > window.innerHeight - 8) top = r.top - infoPopover.offsetHeight - 8;
+    infoPopover.style.left = left + "px";
+    infoPopover.style.top = top + "px";
+  }
+  document.addEventListener("click", function(e){
+    var btn = e.target.closest(".info-btn");
+    if (btn){ if (infoOpenBtn === btn) closeInfo(); else openInfo(btn); return; }
+    if (infoOpenBtn && !e.target.closest("#infoPopover")) closeInfo();
+  });
+  window.addEventListener("scroll", closeInfo, {passive: true, capture: true});
+  window.addEventListener("resize", closeInfo);
 
   var methodBtn = document.getElementById("methodBtn");
   var tableBtn = document.getElementById("tableBtn");
