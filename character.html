@@ -1,0 +1,1000 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>캐릭터 점수 계산기</title>
+<meta name="description" content="원신 UID를 입력하면 장착한 성유물을 자동으로 불러와 캐릭터 종합 점수를 계산해 드려요">
+<meta property="og:type" content="website"><meta property="og:title" content="캐릭터 점수 계산기"><meta property="og:description" content="UID만 입력하면 캐릭터 점수를 계산해 드려요">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23162220'/%3E%3Cpath d='M32 8l18 24-18 24-18-24z' fill='%23D9A85B'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&family=IBM+Plex+Mono:wght@500;600&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="card.css?v=20260924">
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="card.js?v=20260924"></script>
+<style>
+  :root{
+    --bg:#E8EFE9; --surface:#FBFDFB; --surface-2:#EFF4F0;
+    --ink:#14201A; --ink-soft:#3C4A41; --ink-faint:#5B6A60;
+    --border:#C9D5CB; --border-strong:#A5B5AA;
+    --accent:#B8862F; --accent-text:#83590A; --ok:#1E9E5A;
+    --t0:#1B8D4D; --t1:#A46505; --t2:#057F8B; --t3:#1B73D3; --t4:#C03C9F; --t5:#CB4247;
+    --danger:#B83C2B;
+    --shadow: 0 1px 2px rgba(20,32,26,0.06), 0 8px 24px rgba(20,32,26,0.08);
+    --accent-16:rgba(184,134,47,.16); --accent-9:rgba(184,134,47,.09); --accent-25:rgba(184,134,47,.25);
+    --teal-13:rgba(43,179,192,.13); --pink-9:rgba(224,93,192,.09); --hero-tint:rgb(236,227,206);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0E1513; --surface:#16211E; --surface-2:#1D2C28;
+      --ink:#EFF4EF; --ink-soft:#C5D1C8; --ink-faint:#95A69B;
+      --border:#2B3A36; --border-strong:#41544B;
+      --accent:#D9A85B; --accent-text:#EBC27A; --ok:#3DCB86;
+      --t0:#3FB673; --t1:#D9932B; --t2:#2BB3C0; --t3:#4A9CF0; --t4:#E05DC0; --t5:#EE6468;
+      --danger:#EE8C7B;
+      --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 12px 28px rgba(0,0,0,0.4);
+      --accent-16:rgba(217,168,91,.16); --accent-9:rgba(217,168,91,.09); --accent-25:rgba(217,168,91,.25);
+      --teal-13:rgba(43,179,192,.13); --pink-9:rgba(224,93,192,.09); --hero-tint:rgb(65,63,43);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0E1513; --surface:#16211E; --surface-2:#1D2C28;
+    --ink:#EFF4EF; --ink-soft:#C5D1C8; --ink-faint:#95A69B;
+    --border:#2B3A36; --border-strong:#41544B;
+    --accent:#D9A85B; --accent-text:#EBC27A; --ok:#3DCB86;
+    --t0:#3FB673; --t1:#D9932B; --t2:#2BB3C0; --t3:#4A9CF0; --t4:#E05DC0; --t5:#EE6468;
+    --danger:#EE8C7B;
+    --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 12px 28px rgba(0,0,0,0.4);
+    --accent-16:rgba(217,168,91,.16); --accent-9:rgba(217,168,91,.09); --accent-25:rgba(217,168,91,.25);
+    --teal-13:rgba(43,179,192,.13); --pink-9:rgba(224,93,192,.09); --hero-tint:rgb(65,63,43);
+  }
+  *{box-sizing:border-box;}
+  [hidden]{display:none !important;}
+  html{ -webkit-text-size-adjust:100%; background:var(--bg); }
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(1100px 620px at 12% -10%, var(--accent-16), transparent 62%),
+      radial-gradient(900px 560px at 108% 10%, var(--teal-13), transparent 58%),
+      radial-gradient(820px 520px at 50% 118%, var(--pink-9), transparent 62%),
+      var(--bg);
+    color:var(--ink); font-family:'Noto Sans KR',system-ui,sans-serif; font-size:16px; line-height:1.65;
+  }
+  @media (max-width:700px){ body{ background-attachment:scroll; } }
+  .wrap{ max-width:1240px; margin:0 auto; padding:0 20px 72px; }
+  h1,h2,h3{ margin:0; text-wrap:balance; }
+  h1{ font-family:'Gowun Batang',serif; font-weight:700; }
+  h2{ font-family:'Gowun Batang',serif; font-weight:700; font-size:1.1rem; }
+  .mono{ font-family:'IBM Plex Mono',ui-monospace,monospace; font-variant-numeric:tabular-nums; }
+
+  .topbar{ padding:36px 0 22px; }
+  .home-link{ display:inline-flex; align-items:center; gap:6px; margin-bottom:12px; font-size:0.85rem; font-weight:600; color:var(--ink-faint); text-decoration:none; }
+  .home-link:hover{ color:var(--accent-text); }
+  .eyebrow{ font-size:0.8rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--accent-text); font-weight:700; }
+  .eyebrow::before, .eyebrow::after{ content:"◆"; font-size:0.5em; color:var(--accent); opacity:0.8; vertical-align:0.15em; }
+  .eyebrow::before{ margin-right:9px; } .eyebrow::after{ margin-left:9px; }
+  .topbar h1{ font-size:clamp(1.7rem,5vw,2.3rem); margin-top:6px; position:relative; padding-bottom:14px; }
+  .topbar h1::after{ content:""; position:absolute; left:0; bottom:0; width:96px; height:3px; border-radius:2px; background:linear-gradient(90deg, var(--accent), transparent); }
+
+  .card{
+    position:relative; overflow:hidden; border-radius:16px; margin-bottom:16px;
+    background: radial-gradient(460px 240px at 10% -14%, var(--accent-9), transparent 65%), var(--surface);
+    border:1px solid var(--border); box-shadow:var(--shadow); padding:22px 24px;
+  }
+  .card::before{ content:""; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, transparent, var(--accent) 22%, var(--accent) 78%, transparent); opacity:0.55; }
+  .card h2::before{ content:"◆"; font-size:0.6em; color:var(--accent); opacity:0.85; margin-right:9px; vertical-align:0.1em; }
+  .card h2{ margin-bottom:12px; }
+
+  .uid-row{ display:flex; gap:10px; }
+  .uid-row input{
+    flex:1 1 auto; background:var(--surface-2); border:1px solid var(--border-strong); color:var(--ink);
+    border-radius:10px; height:50px; padding:0 16px; font-size:1.02rem;
+  }
+  .uid-row button{
+    flex:none; cursor:pointer; background:var(--accent); color:#16211B; border:1px solid var(--accent);
+    min-height:50px; padding:0 22px; border-radius:10px; font-size:0.95rem; font-weight:700;
+  }
+  .uid-row button:hover{ filter:brightness(1.07); }
+  .uid-row button:disabled{ opacity:0.6; cursor:not-allowed; }
+  .status-msg{ margin-top:10px; font-size:0.9rem; color:var(--ink-soft); }
+  .status-msg.err{ color:var(--danger); font-weight:500; }
+  .hint{ font-size:0.85rem; color:var(--ink-faint); margin-top:8px; }
+
+  .recent-row{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .recent-chip{
+    cursor:pointer; display:inline-flex; align-items:center; gap:6px; background:var(--surface-2);
+    border:1px solid var(--border-strong); color:var(--ink-soft); border-radius:999px;
+    padding:5px 13px 5px 11px; font-size:0.82rem; font-weight:600;
+  }
+  .recent-chip:hover{ border-color:var(--accent); color:var(--accent-text); }
+  .recent-chip .x{
+    display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px;
+    border-radius:50%; color:var(--ink-faint); font-size:0.7rem; margin-left:2px;
+  }
+  .recent-chip .x:hover{ background:var(--border-strong); color:var(--ink); }
+
+  .char-grid{ display:flex; flex-wrap:wrap; gap:12px; }
+  .char-btn{
+    flex:none; width:76px; cursor:pointer; background:none; border:none; padding:0; text-align:center;
+  }
+  .char-btn img{
+    width:76px; height:76px; border-radius:50%; object-fit:cover; display:block;
+    border:2px solid var(--border-strong); background:var(--surface-2);
+    transition:border-color .15s ease, transform .15s ease;
+  }
+  .char-btn:hover img{ border-color:var(--accent); transform:translateY(-2px); }
+  .char-btn.active img{ border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-25); }
+  .char-btn__lv{ font-size:0.72rem; color:var(--ink-faint); margin-top:4px; }
+
+  /* ---------- result card ---------- */
+  #resultWrap{ display:none; }
+  #resultCapture{
+    position:relative; background:#14091F; border-radius:16px; overflow:hidden;
+  }
+  .download-row{ display:flex; justify-content:flex-end; gap:10px; margin-top:14px; }
+  .foot-btn{
+    cursor:pointer; background:var(--surface-2); color:var(--ink-soft); border:1px solid var(--border-strong);
+    min-height:42px; padding:0 18px; border-radius:12px; font-size:0.9rem; font-weight:600;
+  }
+  .foot-btn:hover{ border-color:var(--accent); color:var(--accent-text); }
+
+  .sd-card h2{ margin-bottom:10px; }
+  .sd-card h2:not(:first-child){ margin-top:18px; }
+  .sd-row{ display:flex; flex-wrap:wrap; gap:8px; }
+  .sd-chip{
+    display:inline-flex; align-items:center; gap:6px; background:var(--surface-2);
+    border:1px solid var(--border); border-radius:10px; padding:6px 12px; font-size:0.88rem; font-weight:600;
+  }
+  .sd-chip img{ width:16px; height:16px; object-fit:contain; }
+  .sd-chip.invalid{ color:var(--ink-faint); font-weight:500; }
+  .sd-summary{ display:flex; gap:28px; margin:14px 0 10px; flex-wrap:wrap; }
+  .sd-summary div{ display:flex; flex-direction:column; gap:2px; }
+  .sd-summary b{ font-size:1.15rem; color:var(--accent-text); }
+  .sd-summary span{ font-size:0.8rem; color:var(--ink-faint); }
+  .sd-foot{ display:flex; justify-content:flex-end; margin-top:6px; }
+
+  /* ---------- popup: 점수 계산 방식 ---------- */
+  .modal{
+    position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center;
+    padding:56px 20px 24px; background:rgba(4,9,7,0.8);
+  }
+  .dialog{
+    position:relative; width:min(780px,100%); max-height:100%; overflow:auto;
+    background:var(--surface); color:var(--ink); border:1px solid var(--border); border-radius:20px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.5); padding:28px 30px 32px;
+  }
+  .dialog__close{
+    position:absolute; top:14px; right:14px; width:40px; height:40px; border-radius:50%; cursor:pointer;
+    border:1px solid var(--border-strong); background:var(--surface-2); color:var(--ink-soft); font-size:1.05rem;
+  }
+  .dialog__close:hover{ border-color:var(--accent); color:var(--accent-text); }
+  .dialog h2{ font-size:1.4rem; margin:0 44px 16px 0; font-family:'Gowun Batang','Noto Sans KR',serif; letter-spacing:-0.01em; }
+  .dialog h2::before{ content:"◆"; font-size:0.6em; color:var(--accent); opacity:0.85; margin-right:9px; vertical-align:0.1em; }
+  .dialog h3{ font-size:1.05rem; margin:22px 0 8px; color:var(--accent-text); }
+  .dialog p{ margin:0 0 10px; color:var(--ink-soft); font-size:0.98rem; line-height:1.75; }
+  .dialog ul{ margin:0 0 10px; padding-left:1.2em; color:var(--ink-soft); font-size:0.98rem; line-height:1.8; }
+  .dialog li{ margin-bottom:2px; }
+  .dialog b{ color:var(--ink); }
+  .formula{
+    margin:6px 0 12px; padding:10px 14px; border-radius:10px; background:var(--surface-2);
+    border:1px solid var(--border); font-size:0.95rem; color:var(--ink); line-height:1.7;
+  }
+  .avg-table{ width:100%; border-collapse:collapse; margin:6px 0 12px; font-size:0.95rem; }
+  .avg-table th, .avg-table td{ padding:8px 12px; text-align:left; border-bottom:1px solid var(--border); }
+  .avg-table th{ color:var(--ink-faint); font-weight:600; }
+
+  .site-footer{ margin-top:26px; padding-top:22px; border-top:1px solid var(--border); text-align:center; }
+  .site-footer p{ margin:0 0 6px; font-size:0.78rem; line-height:1.6; color:var(--ink-faint); }
+  .site-footer__credit{ font-size:0.8rem; font-weight:600; color:var(--ink-soft); }
+</style>
+</head><body>
+
+<div class="wrap">
+  <header class="topbar">
+    <a class="home-link" href="index.html">← 처음으로</a>
+    <div class="eyebrow">Genshin Impact · Character Calculator</div>
+    <h1>캐릭터 점수 계산기</h1>
+  </header>
+
+  <div class="card">
+    <h2>UID로 불러오기</h2>
+    <div class="uid-row">
+      <input type="text" id="uidInput" inputmode="numeric" placeholder="원신 UID 입력" autocomplete="off">
+      <button type="button" id="loadBtn">불러오기</button>
+    </div>
+    <p class="status-msg" id="loadStatus" hidden></p>
+    <div class="recent-row" id="recentRow" hidden></div>
+    <p class="hint">게임 내 "캐릭터 상세정보"에 진열해둔 캐릭터만 불러와집니다.</p>
+  </div>
+
+  <div class="card" id="charListCard" hidden>
+    <h2>캐릭터 선택</h2>
+    <div class="char-grid" id="charGrid"></div>
+  </div>
+
+  <div id="resultWrap">
+    <div class="card" style="padding:0;">
+      <div id="resultCapture"></div>
+    </div>
+    <div class="download-row">
+      <button class="foot-btn" id="downloadBtn" type="button">이미지로 저장</button>
+    </div>
+    <div class="card sd-card">
+      <h2 id="sdTitle">성유물 상세 스탯</h2>
+      <div class="sd-row" id="sdRaw"></div>
+      <h2>성유물 옵션별 점수</h2>
+      <div class="sd-row" id="sdScore"></div>
+      <div class="sd-summary">
+        <div><b id="sdCv">-</b><span>CV 스코어 총합</span></div>
+        <div><b id="sdCrit">-</b><span>치명타옵션 비중</span></div>
+      </div>
+      <p class="hint">※ 성유물 점수는 주관적 요소입니다. 자세한 내용은 점수 계산 방식을 참고하세요.</p>
+      <div class="sd-foot">
+        <button class="foot-btn" id="methodBtn" type="button">점수 계산 방식</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="methodModal" role="dialog" aria-modal="true" aria-labelledby="methodTitle" hidden>
+    <div class="dialog">
+      <button class="dialog__close" type="button" aria-label="닫기">✕</button>
+      <h2 id="methodTitle">점수 계산 방식</h2>
+
+      <h3>1. 기초스탯 환산</h3>
+      <p>착용 부위별 옵션과 캐릭터 Lv.90 기초스탯(HP·방어력은 캐릭터 자체, 공격력은 캐릭터+무기 기본공격력)을 기준으로 계산해요.</p>
+      <div class="formula">HP%/공격력%/방어력% 환산값 = (성유물에서 나온 순수 기여량 − 오프셋) ÷ 기초스탯 × 100 − (시계·성배·왕관 중 같은 옵션이 주옵인 것의 최댓값 합산)</div>
+      <p>오프셋: HP는 4780(생명의 꽃 5성 20강 주옵 최댓값), 공격력은 311(죽음의 깃털 5성 20강 주옵 최댓값), 방어력은 0.</p>
+
+      <h3>2. 옵션 평균값</h3>
+      <table class="avg-table">
+        <thead><tr><th>옵션</th><th>평균값</th><th>5성 20강 주옵 최댓값</th></tr></thead>
+        <tbody>
+          <tr><td>치명타 확률</td><td>3.3%</td><td>31.1%</td></tr>
+          <tr><td>치명타 피해</td><td>6.6%</td><td>62.2%</td></tr>
+          <tr><td>원소충전효율</td><td>5.5%</td><td>51.8%</td></tr>
+          <tr><td>원소마스터리</td><td>19.75</td><td>187</td></tr>
+          <tr><td>공격력%</td><td>4.975%</td><td>46.6%</td></tr>
+          <tr><td>HP%</td><td>4.975%</td><td>46.6%</td></tr>
+          <tr><td>방어력%</td><td>6.2%</td><td>58.3%</td></tr>
+        </tbody>
+      </table>
+      <div class="formula">옵션 점수 = (환산값 − 주옵 최댓값 합산) ÷ 옵션 평균값</div>
+
+      <h3>3. 원소충전효율 상한</h3>
+      <p>캐릭터별로 실제 필요한 원충(100% 기준 추가로 필요한 %)을 넘겨서 투자하면, 그 초과분만큼 원충 점수에서 다시 깎아요. 필요 이상으로 원충을 몰아줘도 점수가 무한정 오르지 않도록 하는 보정이에요.</p>
+
+      <h3>4. 보정 (×0.5)</h3>
+      <p>공격력·HP·원소마스터리가 캐릭터에게 유효하지만 상대적으로 효율이 떨어지는 옵션인 경우, 해당 옵션의 점수를 절반으로 계산해요.</p>
+
+      <h3>5. 치명옵션비중 감산</h3>
+      <p>치명타 확률·피해가 유효옵션인 캐릭터(서포터 제외) 한정으로, 치명옵션비중이 50% 미만이면 감산이 들어가요.</p>
+      <div class="formula">치명옵션비중 = (치확 점수 + 치피 점수) ÷ 유효옵션 합산<br>감산값 = 1 + (−5 ÷ 유효옵션 합산)</div>
+
+      <h3>6. 최종 점수</h3>
+      <p>0.5 보정이 걸린 옵션은 아래 유효옵션 개수에서 제외하고 분모를 정해요.</p>
+      <div class="formula">최종 점수 = (유효옵션 합산 × 감산값) ÷ 분모 × 100<br>분모 : 유효옵션 4개 이상 40 · 3개 35 · 2개 25 · 1개 이하 20</div>
+
+      <h3>7. 등급</h3>
+      <p>90점 이상 SS · 77.5점 이상 S · 65점 이상 A · 52.5점 이상 B · 40점 이상 C · 40점 미만 D · 0점 이하 측정불가</p>
+
+      <h3>8. CV(치명타 가치)</h3>
+      <div class="formula">CV = 치명타 확률(성유물 합계) × 2 + 치명타 피해(성유물 합계)</div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <p>이 사이트는 개인이 만든 팬 제작 계산기이며, 원신(Genshin Impact) 및 호요버스(HoYoverse)와 관련이 없습니다.<br>계산 결과는 참고용이며, 정확성을 보장하지 않습니다.</p>
+    <p>본 계산기는 서비스를 종료한 디스코드 봇 '푸리나'를 기반으로 제작되었습니다.</p>
+    <p>© All rights reserved by HoYoverse. Other properties belong to their respective owners.</p>
+    <p>캐릭터 데이터 제공: <a href="https://enka.network" target="_blank" rel="noopener" style="color:inherit;">Enka.Network</a></p>
+    <p class="site-footer__credit">제작자 : 민트</p>
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var ENKA_PROXY = "https://enka-proxy.reojhg.workers.dev";
+  var ENKA_UI = "https://enka.network/ui/";
+  var CHARMAP_URL = "https://raw.githubusercontent.com/EnkaNetwork/API-docs/master/store/characters.json";
+
+  // ---------------------------------------------------------------- data
+  var CHARACTERS = [
+    ["아이노","Aino",11201,242,607],["알베도","Albedo",13225,251,876],["알하이탐","Alhaitham",13348,313,781],
+    ["에일로이","Aloy",10898,233,676],["알료샤","Alyosha",11962,265,702],["엠버","Amber",9461,223,600],
+    ["아라타키 이토","Arataki Itto",12858,227,959],["아를레키노","Arlecchino",13103,342,764],
+    ["백출","Baizhu",13348,192,499],["바바라","Barbara",9787,159,668],["북두","Beidou",13049,225,648],
+    ["베넷","Bennett",12397,191,771],["캔디스","Candace",10874,212,682],["샤를로트","Charlotte",10766,173,546],
+    ["차스카","Chasca",9796,346,614],["슈브르즈","Chevreuse",11962,193,604],["치오리","Chiori",11437,322,953],
+    ["중운","Chongyun",10983,223,648],["시틀라리","Citlali",11633,126,763],["클로린드","Clorinde",12956,337,783],
+    ["콜레이","Collei",9787,199,600],["콜롬비나","Columbina",14695,95,514],["사이노","Cyno",12490,318,859],
+    ["달리아","Dahlia",12506,189,559],["데히야","Dehya",15674,265,627],["다이루크","Diluc",12980,334,783],
+    ["디오나","Diona",9569,212,600],["도리","Dori",12397,223,723],["두린","Durin",12429,346,822],
+    ["에밀리","Emilie",13568,334,730],["에스코피에","Escoffier",13348,346,731],["유라","Eula",13225,342,750],
+    ["파루잔","Faruzan",9569,196,627],["피슬","Fischl",9189,244,593],["플린스","Flins",12490,351,808],
+    ["프레미네","Freminet",12071,254,708],["푸리나","Furina",15307,243,695],["가명","Gaming",11418,301,702],
+    ["감우","Ganyu",9796,334,630],["고로","Gorou",9569,182,648],["호두","Hu Tao",15552,106,876],
+    ["얀사","Iansan",10657,257,638],["이파","Ifa",10081,178,605],["일루가","Illuga",11962,191,813],
+    ["이네파","Ineffa",12613,330,827],["야호다","Jahoda",9646,223,580],["진","Jean",14695,239,768],
+    ["카치나","Kachina",11799,216,792],["카에데하라 카즈하","Kaedehara Kazuha",13348,296,806],
+    ["케이아","Kaeya",11636,223,791],["카미사토 아야카","Kamisato Ayaka",12858,342,783],
+    ["카미사토 아야토","Kamisato Ayato",13715,298,768],["카베","Kaveh",11962,233,750],["각청","Keqing",13103,322,799],
+    ["키니치","Kinich",12858,332,801],["키라라","Kirara",12179,223,546],["클레","Klee",10286,310,614],
+    ["쿠죠 사라","Kujou Sara",9569,195,627],["쿠키 시노부","Kuki Shinobu",12288,212,750],
+    ["남연","Lan Yan",9243,250,580],["라우마","Lauma",10653,254,668],["레일라","Layla",11092,216,655],
+    ["린네아","Linnea",9894,143,906],["리사","Lisa",9569,231,573],["로엔","Lohen",12858,344,783],
+    ["리넷","Lynette",12397,231,711],["리니","Lyney",11021,318,537],["마비카","Mavuika",12552,358,791],
+    ["미카","Mika",12506,223,713],["모나","Mona",10409,287,653],["말라니","Mualani",15184,181,570],
+    ["나히다","Nahida",10360,298,630],["나비아","Navia",12650,351,793],["네페르","Nefer",12703,344,799],
+    ["느비예트","Neuvillette",14695,208,576],["니콜","Nicole",10409,342,562],["닐루","Nilou",15184,229,728],
+    ["응광","Ningguang",9787,212,573],["노엘","Noelle",12071,191,798],["오데트","Odette",12980,334,786],
+    ["올로룬","Ororon",9243,244,586],["프루네","Prune",9678,220,580],["치치","Qiqi",12368,287,922],
+    ["라이덴 쇼군","Raiden Shogun",12907,337,789],["레이저","Razor",11962,233,750],["로자리아","Rosaria",12288,240,709],
+    ["산드로네","Sandrone",13225,342,752],["산고노미야 코코미","Sangonomiya Kokomi",13470,234,657],
+    ["사유","Sayu",11853,244,744],["세토스","Sethos",9787,227,559],["신학","Shenhe",12992,303,830],
+    ["시카노인 헤이조","Shikanoin Heizou",10657,225,683],["시그윈","Sigewinne",13348,192,499],
+    ["스커크","Skirk",12417,358,806],["설탕","Sucrose",9243,169,702],["타르탈리아","Tartaglia",13103,301,814],
+    ["토마","Thoma",10331,201,750],["타이나리","Tighnari",10849,267,630],
+    ["바레사","Varesa",12699,356,781],["바르카","Varka",12613,352,795],["벤티","Venti",10531,263,668],
+    ["방랑자","Wanderer",10164,327,607],["라이오슬리","Wriothesley",13592,310,763],["향릉","Xiangling",10874,225,668],
+    ["한운","Xianyun",10409,334,572],["소","Xiao",12735,349,799],["실로닌","Xilonen",12405,275,929],
+    ["행추","Xingqiu",10222,201,757],["신염","Xinyan",11201,248,798],["야에 미코","Yae Miko",10372,339,568],
+    ["연비","Yanfei",9352,240,586],["요요","Yaoyao",12288,212,750],["야란","Yelan",14450,243,547],
+    ["요이미야","Yoimiya",10164,322,614],["유메미즈키 미즈키","Yumemizuki Mizuki",12735,215,757],
+    ["운근","Yun Jin",10657,191,734],["종려","Zhongli",14695,251,737],["자백","Zibai",12919,224,956],
+    ["베스나","Vesna",13262,354,730],["보댜니차","Vodyanitsa",14818,108,484]
+  ].map(function(a){ return {ko:a[0], en:a[1], hp:a[2], atk:a[3], def:a[4]}; });
+
+  var CHAR_BUILDS = {
+    "아이노":{v:["cr","cd","em","er"],h:[]},
+    "알베도":{v:["cr","cd","er","atk_pct","atk_flat","def_pct","def_flat"],h:["atk"]},
+    "알하이탐":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["atk"]},
+    "에일로이":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["em"]},
+    "알료샤":{v:["cr","er","atk_pct","atk_flat"],h:[]},
+    "엠버":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:[]},
+    "아라타키 이토":{v:["cr","cd","er","atk_pct","atk_flat","def_pct","def_flat"],h:["atk"]},
+    "아를레키노":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["em"]},
+    "백출":{v:["er","hp_pct","hp_flat"],h:[]},
+    "바바라":{v:["er","hp_pct","hp_flat"],h:[]},
+    "북두":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "베넷":{v:["er","hp_pct","hp_flat"],h:[]},
+    "캔디스":{v:["cr","er","hp_pct","hp_flat"],h:[]},
+    "샤를로트":{v:["er","atk_pct","atk_flat"],h:[]},
+    "차스카":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["em"]},
+    "슈브르즈":{v:["er","hp_pct","hp_flat"],h:[]},
+    "치오리":{v:["cr","cd","atk_pct","atk_flat","def_pct","def_flat"],h:["atk"]},
+    "중운":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "시틀라리":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["atk"]},
+    "클로린드":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["em"]},
+    "콜레이":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:[]},
+    "콜롬비나":{v:["cr","cd","er","hp_pct","hp_flat"],h:[]},
+    "사이노":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["atk"]},
+    "달리아":{v:["er","hp_pct","hp_flat"],h:[]},
+    "데히야":{v:["cr","cd","em","er","atk_pct","atk_flat","hp_pct","hp_flat"],h:[]},
+    "다이루크":{v:["cr","cd","em","atk_pct","atk_flat"],h:["em"]},
+    "디오나":{v:["er","hp_pct","hp_flat"],h:[]},
+    "도리":{v:["cr","cd","er","atk_pct","atk_flat","hp_pct","hp_flat"],h:[]},
+    "두린":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "에밀리":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "에스코피에":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "유라":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "파루잔":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "피슬":{v:["cr","cd","em","atk_pct","atk_flat"],h:[]},
+    "플린스":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["em"]},
+    "프레미네":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "푸리나":{v:["cr","cd","er","hp_pct","hp_flat"],h:[]},
+    "가명":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:[]},
+    "감우":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:[]},
+    "고로":{v:["er","def_pct","def_flat"],h:[]},
+    "호두":{v:["cr","cd","em","er","atk_pct","atk_flat","hp_pct","hp_flat"],h:["atk"]},
+    "얀사":{v:["er","atk_pct","atk_flat"],h:[]},
+    "이파":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["em"]},
+    "일루가":{v:["cr","em","er"],h:[]},
+    "이네파":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:[]},
+    "야호다":{v:["er","atk_pct","atk_flat"],h:[]},
+    "진":{v:["cr","er","atk_pct","atk_flat"],h:[]},
+    "카치나":{v:["cr","cd","er","def_pct","def_flat"],h:[]},
+    "카에데하라 카즈하":{v:["em","er","atk_pct","atk_flat"],h:["atk"]},
+    "케이아":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "카미사토 아야카":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "카미사토 아야토":{v:["cr","cd","em","er","atk_pct","atk_flat","hp_pct","hp_flat"],h:["hp","em"]},
+    "카베":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:[]},
+    "각청":{v:["cr","cd","em","atk_pct","atk_flat"],h:["em"]},
+    "키니치":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "키라라":{v:["em","er","hp_pct","hp_flat"],h:[]},
+    "클레":{v:["cr","cd","em","atk_pct","atk_flat"],h:["em"]},
+    "쿠죠 사라":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "쿠키 시노부":{v:["em","er","hp_pct","hp_flat"],h:[]},
+    "남연":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["em"]},
+    "라우마":{v:["em","er"],h:[]},
+    "레일라":{v:["er","hp_pct","hp_flat"],h:[]},
+    "린네아":{v:["cr","cd","em","er","def_pct","def_flat"],h:[]},
+    "리사":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:[]},
+    "로엔":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "리넷":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "리니":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "마비카":{v:["cr","cd","em","atk_pct","atk_flat"],h:[]},
+    "미카":{v:["er","hp_pct","hp_flat"],h:[]},
+    "모나":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "말라니":{v:["cr","cd","em","er","hp_pct","hp_flat"],h:[]},
+    "나히다":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["atk"]},
+    "나비아":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "네페르":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["atk"]},
+    "느비예트":{v:["cr","cd","er","hp_pct","hp_flat"],h:[]},
+    "니콜":{v:["er","atk_pct","atk_flat"],h:[]},
+    "닐루":{v:["em","er","hp_pct","hp_flat"],h:["em"]},
+    "응광":{v:["cr","cd","atk_pct","atk_flat"],h:[]},
+    "노엘":{v:["cr","cd","atk_pct","atk_flat","def_pct","def_flat"],h:["atk"]},
+    "오데트":{v:["cr","cd","em","atk_pct","atk_flat"],h:[]},
+    "올로룬":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["em"]},
+    "프루네":{v:["er","atk_pct","atk_flat"],h:[]},
+    "치치":{v:["er","atk_pct","atk_flat"],h:[]},
+    "라이덴 쇼군":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "레이저":{v:["cr","cd","em","atk_pct","atk_flat"],h:[]},
+    "로자리아":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:[]},
+    "산드로네":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:[]},
+    "산고노미야 코코미":{v:["em","er","atk_pct","atk_flat","hp_pct","hp_flat"],h:["atk","em"]},
+    "사유":{v:["cr","em","er","atk_pct","atk_flat"],h:[]},
+    "세토스":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:[]},
+    "신학":{v:["er","atk_pct","atk_flat"],h:[]},
+    "시카노인 헤이조":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "시그윈":{v:["er","hp_pct","hp_flat"],h:[]},
+    "스커크":{v:["cr","cd","atk_pct","atk_flat"],h:[]},
+    "설탕":{v:["em","er"],h:[]},
+    "타르탈리아":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["em"]},
+    "토마":{v:["em","er","hp_pct","hp_flat"],h:[]},
+    "타이나리":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["atk"]},
+    "바레사":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "바르카":{v:["cr","cd","atk_pct","atk_flat"],h:[]},
+    "벤티":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:[]},
+    "방랑자":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "라이오슬리":{v:["cr","cd","em","atk_pct","atk_flat"],h:["em"]},
+    "향릉":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:[]},
+    "한운":{v:["er","atk_pct","atk_flat"],h:[]},
+    "소":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "실로닌":{v:["er","def_pct","def_flat"],h:[]},
+    "행추":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "신염":{v:["cr","cd","er","atk_pct","atk_flat","def_pct","def_flat"],h:[]},
+    "야에 미코":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["em"]},
+    "연비":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["em"]},
+    "요요":{v:["em","er","hp_pct","hp_flat"],h:[]},
+    "야란":{v:["cr","cd","er","hp_pct","hp_flat"],h:[]},
+    "요이미야":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["em"]},
+    "유메미즈키 미즈키":{v:["em","er","atk_pct","atk_flat"],h:["atk"]},
+    "운근":{v:["er","def_pct","def_flat"],h:[]},
+    "종려":{v:["cr","cd","er","atk_pct","atk_flat","hp_pct","hp_flat"],h:[]},
+    "자백":{v:["cr","cd","er","def_pct","def_flat"],h:[]},
+    "베스나":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:[]},
+    "보댜니차":{v:["er","hp_pct","hp_flat"],h:[]}
+  };
+
+  var STAT_LABEL = {cr:"치명타 확률", cd:"치명타 피해", em:"원소마스터리", er:"원소충전효율", atk:"공격력", hp:"HP", def:"방어력"};
+
+  // 옵션 평균값 / 5성 20강 주옵션 최대값
+  var AVG = {cr:3.3, cd:6.6, em:19.75, er:5.5, atk:4.975, hp:4.975, def:6.2};
+  var MAXMAIN = {cr:31.1, cd:62.2, hp:46.6, er:51.8, atk:46.6, def:58.3, em:187};
+
+  var PROP2CAT = {
+    FIGHT_PROP_CRITICAL:"cr", FIGHT_PROP_CRITICAL_HURT:"cd", FIGHT_PROP_ELEMENT_MASTERY:"em",
+    FIGHT_PROP_CHARGE_EFFICIENCY:"er", FIGHT_PROP_ATTACK_PERCENT:"atk_pct", FIGHT_PROP_ATTACK:"atk_flat",
+    FIGHT_PROP_HP_PERCENT:"hp_pct", FIGHT_PROP_HP:"hp_flat", FIGHT_PROP_DEFENSE_PERCENT:"def_pct", FIGHT_PROP_DEFENSE:"def_flat"
+  };
+  var MAIN2CAT = {
+    FIGHT_PROP_CRITICAL:"cr", FIGHT_PROP_CRITICAL_HURT:"cd", FIGHT_PROP_ELEMENT_MASTERY:"em", FIGHT_PROP_CHARGE_EFFICIENCY:"er",
+    FIGHT_PROP_ATTACK_PERCENT:"atk", FIGHT_PROP_HP_PERCENT:"hp", FIGHT_PROP_DEFENSE_PERCENT:"def"
+  };
+  var SLOT_LABEL = {EQUIP_BRACER:"생명의 꽃", EQUIP_NECKLACE:"죽음의 깃털", EQUIP_SHOES:"시간의 모래", EQUIP_RING:"공간의 성배", EQUIP_DRESS:"이성의 왕관"};
+  var SLOT_ORDER = ["EQUIP_BRACER","EQUIP_NECKLACE","EQUIP_SHOES","EQUIP_RING","EQUIP_DRESS"];
+
+  // setId -> 한국어 세트 이름 (Enka store/gi/relics.json + locs.json 기준)
+  var SET_NAME = {
+    "10001":"행자의 마음","10002":"용사의 마음","10003":"수호자의 마음","10004":"기적","10005":"전투광",
+    "10006":"무인","10007":"교관","10008":"노름꾼","10009":"유배자","10010":"모험가","10011":"행운아",
+    "10012":"학사","10013":"떠돌이 의사","14001":"얼음바람 속에서 길잃은 용사","14002":"뇌명을 평정한 존자",
+    "14003":"불 위를 걷는 현인","14004":"사랑받는 소녀","15001":"검투사의 피날레","15002":"청록색 그림자",
+    "15003":"대지를 유랑하는 악단","15004":"빙하와 눈의 모래","15005":"번개 같은 분노","15006":"불타오르는 화염의 마녀",
+    "15007":"옛 왕실의 의식","15008":"피에 물든 기사도","15009":"불을 모시는 자","15010":"물을 모시는 자",
+    "15011":"뇌명을 모시는 자","15012":"바람을 모시는 자","15013":"얼음을 모시는 자","15014":"유구한 반암",
+    "15015":"날아오르는 유성","15016":"몰락한 마음","15017":"견고한 천암","15018":"창백의 화염",
+    "15019":"추억의 시메나와","15020":"절연의 기치","15021":"풍요로운 꿈의 껍데기","15022":"바다에 물든 거대 조개",
+    "15023":"진사 왕생록","15024":"제사의 여운","15025":"숲의 기억","15026":"도금된 꿈",
+    "15027":"모래 위 누각의 역사","15028":"잃어버린 낙원의 꽃","15029":"님프의 꿈","15030":"감로빛 꽃바다",
+    "15031":"그림자 사냥꾼","15032":"황금 극단","15033":"지난날의 노래","15034":"메아리숲의 야화",
+    "15035":"조화로운 공상의 단편","15036":"미완의 몽상","15037":"잿더미성 용사의 두루마리","15038":"흑요석 비전",
+    "15039":"긴 밤의 맹세","15040":"깊은 회랑의 피날레","15041":"하늘 경계가 드러난 밤","15042":"달을 엮는 밤노래",
+    "15043":"샛별과 달의 여명","15044":"바람이 시작되는 날","15045":"하늘의 은총","15046":"그림자 속 산산조각 난 꿈",
+    "15047":"핏빛 증표","15048":"용광로가 빚은 심장"
+  };
+  var WEAPON_NAME = {"UI_EquipIcon_Sword_Blunt": "무인검", "UI_EquipIcon_Sword_Blunt_Awaken": "무인검", "UI_EquipIcon_Claymore_Aniki": "고래 비녀", "UI_EquipIcon_Claymore_Aniki_Awaken": "고래 비녀", "UI_EquipIcon_Pole_Gewalt": "초보자의 장창", "UI_EquipIcon_Pole_Gewalt_Awaken": "초보자의 장창", "UI_EquipIcon_Catalyst_Apprentice": "학도의 노트", "UI_EquipIcon_Catalyst_Apprentice_Awaken": "학도의 노트", "UI_EquipIcon_Bow_Hunters": "현려천균", "UI_EquipIcon_Bow_Hunters_Awaken": "현려천균", "UI_EquipIcon_Sword_Silver": "실버 소드", "UI_EquipIcon_Sword_Silver_Awaken": "실버 소드", "UI_EquipIcon_Claymore_Oyaji": "용병 중검", "UI_EquipIcon_Claymore_Oyaji_Awaken": "용병 중검", "UI_EquipIcon_Pole_Rod": "철촉창", "UI_EquipIcon_Pole_Rod_Awaken": "철촉창", "UI_EquipIcon_Catalyst_Pocket": "포켓 주술서", "UI_EquipIcon_Catalyst_Pocket_Awaken": "포켓 주술서", "UI_EquipIcon_Bow_Old": "노련의 사냥활", "UI_EquipIcon_Bow_Old_Awaken": "노련의 사냥활", "UI_EquipIcon_Sword_Steel": "차가운 칼날", "UI_EquipIcon_Sword_Steel_Awaken": "차가운 칼날", "UI_EquipIcon_Sword_Dawn": "여명신검", "UI_EquipIcon_Sword_Dawn_Awaken": "여명신검", "UI_EquipIcon_Sword_Traveler": "여행자의 검", "UI_EquipIcon_Sword_Traveler_Awaken": "여행자의 검", "UI_EquipIcon_Sword_Darker": "암철검", "UI_EquipIcon_Sword_Darker_Awaken": "암철검", "UI_EquipIcon_Sword_Sashimi": "흘호 생선회칼", "UI_EquipIcon_Sword_Sashimi_Awaken": "흘호 생선회칼", "UI_EquipIcon_Sword_Mitsurugi": "비천어검", "UI_EquipIcon_Sword_Mitsurugi_Awaken": "비천어검", "UI_EquipIcon_Claymore_Glaive": "강철의 그림자", "UI_EquipIcon_Claymore_Glaive_Awaken": "강철의 그림자", "UI_EquipIcon_Claymore_Siegfry": "드래곤 블러드 소드", "UI_EquipIcon_Claymore_Siegfry_Awaken": "드래곤 블러드 소드", "UI_EquipIcon_Claymore_Tin": "백철 대검", "UI_EquipIcon_Claymore_Tin_Awaken": "백철 대검", "UI_EquipIcon_Claymore_Reasoning": "훌륭한 대화수단", "UI_EquipIcon_Claymore_Reasoning_Awaken": "훌륭한 대화수단", "UI_EquipIcon_Claymore_Mitsurugi": "비천대어검", "UI_EquipIcon_Claymore_Mitsurugi_Awaken": "비천대어검", "UI_EquipIcon_Pole_Ruby": "백술창", "UI_EquipIcon_Pole_Ruby_Awaken": "백술창", "UI_EquipIcon_Pole_Halberd": "미늘창", "UI_EquipIcon_Pole_Halberd_Awaken": "미늘창", "UI_EquipIcon_Pole_Noire": "흑술창", "UI_EquipIcon_Pole_Noire_Awaken": "흑술창", "UI_EquipIcon_Catalyst_Intro": "마도 서론", "UI_EquipIcon_Catalyst_Intro_Awaken": "마도 서론", "UI_EquipIcon_Catalyst_Pulpfic": "드래곤 슬레이어 영웅담", "UI_EquipIcon_Catalyst_Pulpfic_Awaken": "드래곤 슬레이어 영웅담", "UI_EquipIcon_Catalyst_Lightnov": "이세계 여행기", "UI_EquipIcon_Catalyst_Lightnov_Awaken": "이세계 여행기", "UI_EquipIcon_Catalyst_Jade": "비취 오브", "UI_EquipIcon_Catalyst_Jade_Awaken": "비취 오브", "UI_EquipIcon_Catalyst_Phoney": "1급 보옥", "UI_EquipIcon_Catalyst_Phoney_Awaken": "1급 보옥", "UI_EquipIcon_Bow_Crowfeather": "까마귀깃 활", "UI_EquipIcon_Bow_Crowfeather_Awaken": "까마귀깃 활", "UI_EquipIcon_Bow_Arjuna": "신궁의 서약", "UI_EquipIcon_Bow_Arjuna_Awaken": "신궁의 서약", "UI_EquipIcon_Bow_Curve": "곡궁", "UI_EquipIcon_Bow_Curve_Awaken": "곡궁", "UI_EquipIcon_Bow_Sling": "탄궁", "UI_EquipIcon_Bow_Sling_Awaken": "탄궁", "UI_EquipIcon_Bow_Msg": "전령", "UI_EquipIcon_Bow_Msg_Awaken": "전령", "UI_EquipIcon_Sword_Zephyrus": "페보니우스 검", "UI_EquipIcon_Sword_Zephyrus_Awaken": "페보니우스 검", "UI_EquipIcon_Sword_Troupe": "피리검", "UI_EquipIcon_Sword_Troupe_Awaken": "피리검", "UI_EquipIcon_Sword_Fossil": "제례검", "UI_EquipIcon_Sword_Fossil_Awaken": "제례검", "UI_EquipIcon_Sword_Theocrat": "왕실의 장검", "UI_EquipIcon_Sword_Theocrat_Awaken": "왕실의 장검", "UI_EquipIcon_Sword_Rockkiller": "용의 포효", "UI_EquipIcon_Sword_Rockkiller_Awaken": "용의 포효", "UI_EquipIcon_Sword_Proto": "참암 프로토타입", "UI_EquipIcon_Sword_Proto_Awaken": "참암 프로토타입", "UI_EquipIcon_Sword_Exotic": "강철 벌침", "UI_EquipIcon_Sword_Exotic_Awaken": "강철 벌침", "UI_EquipIcon_Sword_Blackrock": "흑암 장검", "UI_EquipIcon_Sword_Blackrock_Awaken": "흑암 장검", "UI_EquipIcon_Sword_Bloodstained": "칠흑검", "UI_EquipIcon_Sword_Bloodstained_Awaken": "칠흑검", "UI_EquipIcon_Sword_Psalmus": "강림의 검", "UI_EquipIcon_Sword_Psalmus_Awaken": "강림의 검", "UI_EquipIcon_Sword_Magnum": "부식의 검", "UI_EquipIcon_Sword_Magnum_Awaken": "부식의 검", "UI_EquipIcon_Sword_Outlaw": "뒷골목의 섬광", "UI_EquipIcon_Sword_Outlaw_Awaken": "뒷골목의 섬광", "UI_EquipIcon_Sword_Bakufu": "아메노마 카게우치가타나", "UI_EquipIcon_Sword_Bakufu_Awaken": "아메노마 카게우치가타나", "UI_EquipIcon_Sword_Opus": "진사의 방추", "UI_EquipIcon_Sword_Opus_Awaken": "진사의 방추", "UI_EquipIcon_Sword_Youtou": "카고츠루베 잇신", "UI_EquipIcon_Sword_Youtou_Awaken": "카고츠루베 잇신", "UI_EquipIcon_Sword_Arakalari": "원목 검", "UI_EquipIcon_Sword_Arakalari_Awaken": "원목 검", "UI_EquipIcon_Sword_Pleroma": "크시포스의 달빛", "UI_EquipIcon_Sword_Pleroma_Awaken": "크시포스의 달빛", "UI_EquipIcon_Sword_Kasabouzu": "꽃잎비", "UI_EquipIcon_Sword_Kasabouzu_Awaken": "꽃잎비", "UI_EquipIcon_Sword_Boreas": "늑대 송곳니", "UI_EquipIcon_Sword_Boreas_Awaken": "늑대 송곳니", "UI_EquipIcon_Sword_Vorpal": "해연의 피날레", "UI_EquipIcon_Sword_Vorpal_Awaken": "해연의 피날레", "UI_EquipIcon_Sword_Machination": "잿빛의 강 뱃사공", "UI_EquipIcon_Sword_Machination_Awaken": "잿빛의 강 뱃사공", "UI_EquipIcon_Sword_Mechanic": "뱃도랑 장검", "UI_EquipIcon_Sword_Mechanic_Awaken": "뱃도랑 장검", "UI_EquipIcon_Sword_Purewill": "수선화 십자검", "UI_EquipIcon_Sword_Isikhulu": "에스피찰의 피리", "UI_EquipIcon_Sword_Isikhulu_Awaken": "에스피찰의 피리", "UI_EquipIcon_Sword_Umpakati": "견고한 골검", "UI_EquipIcon_Sword_Umpakati_Awaken": "견고한 골검", "UI_EquipIcon_Sword_SacrificialNgombe": "에슈의 재앙", "UI_EquipIcon_Sword_SacrificialNgombe_Awaken": "에슈의 재앙", "UI_EquipIcon_Sword_Ilmarinen": "고요한 휘파람", "UI_EquipIcon_Sword_Ilmarinen_Awaken": "고요한 휘파람", "UI_EquipIcon_Sword_Miekka": "달을 엮는 자의 새벽빛", "UI_EquipIcon_Sword_Miekka_Awaken": "달을 엮는 자의 새벽빛", "UI_EquipIcon_Sword_SerpentTooth": "이단을 가르는 불꽃", "UI_EquipIcon_Sword_SerpentTooth_Awaken": "이단을 가르는 불꽃", "UI_EquipIcon_Sword_GlintstoneSword": "불꽃의 인도자", "UI_EquipIcon_Sword_GlintstoneSword_Awaken": "불꽃의 인도자", "UI_EquipIcon_Claymore_Zephyrus": "페보니우스 대검", "UI_EquipIcon_Claymore_Zephyrus_Awaken": "페보니우스 대검", "UI_EquipIcon_Claymore_Troupe": "시간의 검", "UI_EquipIcon_Claymore_Troupe_Awaken": "시간의 검", "UI_EquipIcon_Claymore_Fossil": "제례 대검", "UI_EquipIcon_Claymore_Fossil_Awaken": "제례 대검", "UI_EquipIcon_Claymore_Theocrat": "왕실의 대검", "UI_EquipIcon_Claymore_Theocrat_Awaken": "왕실의 대검", "UI_EquipIcon_Claymore_Perdue": "빗물 베기", "UI_EquipIcon_Claymore_Perdue_Awaken": "빗물 베기", "UI_EquipIcon_Claymore_Proto": "고화 프로토타입", "UI_EquipIcon_Claymore_Proto_Awaken": "고화 프로토타입", "UI_EquipIcon_Claymore_Exotic": "백영검", "UI_EquipIcon_Claymore_Exotic_Awaken": "백영검", "UI_EquipIcon_Claymore_Blackrock": "흑암참도", "UI_EquipIcon_Claymore_Blackrock_Awaken": "흑암참도", "UI_EquipIcon_Claymore_Kione": "이무기 검", "UI_EquipIcon_Claymore_Kione_Awaken": "이무기 검", "UI_EquipIcon_Claymore_Dragonfell": "설장의 성은", "UI_EquipIcon_Claymore_Dragonfell_Awaken": "설장의 성은", "UI_EquipIcon_Claymore_Lapis": "천암고검", "UI_EquipIcon_Claymore_Lapis_Awaken": "천암고검", "UI_EquipIcon_Claymore_Bakufu": "카츠라기를 벤 나가마사", "UI_EquipIcon_Claymore_Bakufu_Awaken": "카츠라기를 벤 나가마사", "UI_EquipIcon_Claymore_MillenniaTuna": "진주를 문 해황", "UI_EquipIcon_Claymore_MillenniaTuna_Awaken": "진주를 문 해황", "UI_EquipIcon_Claymore_Maria": "아쿠오마루", "UI_EquipIcon_Claymore_Maria_Awaken": "아쿠오마루", "UI_EquipIcon_Claymore_Arakalari": "숲의 리게일리어", "UI_EquipIcon_Claymore_Arakalari_Awaken": "숲의 리게일리어", "UI_EquipIcon_Claymore_Pleroma": "물빛 마카이라", "UI_EquipIcon_Claymore_Pleroma_Awaken": "물빛 마카이라", "UI_EquipIcon_Claymore_Fleurfair": "꽃 장식 대검", "UI_EquipIcon_Claymore_Fleurfair_Awaken": "꽃 장식 대검", "UI_EquipIcon_Claymore_BeastTamer": "대화봉", "UI_EquipIcon_Claymore_BeastTamer_Awaken": "대화봉", "UI_EquipIcon_Claymore_Vorpal": "파도 그림자 대검", "UI_EquipIcon_Claymore_Vorpal_Awaken": "파도 그림자 대검", "UI_EquipIcon_Claymore_Mechanic": "휴대용 체인톱", "UI_EquipIcon_Claymore_Mechanic_Awaken": "휴대용 체인톱", "UI_EquipIcon_Claymore_Champion": "「슈퍼 울트라 패왕 마검」", "UI_EquipIcon_Claymore_Champion_Awaken": "「슈퍼 울트라 패왕 마검」", "UI_EquipIcon_Claymore_Isikhulu": "대지를 울리는 자", "UI_EquipIcon_Claymore_Isikhulu_Awaken": "대지를 울리는 자", "UI_EquipIcon_Claymore_Umpakati": "수확의 갈고리", "UI_EquipIcon_Claymore_Umpakati_Awaken": "수확의 갈고리", "UI_EquipIcon_Claymore_Polilith": "불로 벼린 지혜", "UI_EquipIcon_Claymore_Polilith_Awaken": "불로 벼린 지혜", "UI_EquipIcon_Claymore_Ilmarinen": "만능 열쇠", "UI_EquipIcon_Claymore_Ilmarinen_Awaken": "만능 열쇠", "UI_EquipIcon_Claymore_EscapeWheel": "황금빛 선율", "UI_EquipIcon_Claymore_EscapeWheel_Awaken": "황금빛 선율", "UI_EquipIcon_Claymore_GlintstoneClaymore": "구원의 대검", "UI_EquipIcon_Claymore_GlintstoneClaymore_Awaken": "구원의 대검", "UI_EquipIcon_Pole_Stardust": "용학살창", "UI_EquipIcon_Pole_Stardust_Awaken": "용학살창", "UI_EquipIcon_Pole_Proto": "별의 낫 프로토타입", "UI_EquipIcon_Pole_Proto_Awaken": "별의 낫 프로토타입", "UI_EquipIcon_Pole_Exotic": "유월창", "UI_EquipIcon_Pole_Exotic_Awaken": "유월창", "UI_EquipIcon_Pole_Blackrock": "흑암창", "UI_EquipIcon_Pole_Blackrock_Awaken": "흑암창", "UI_EquipIcon_Pole_Gladiator": "결투의 창", "UI_EquipIcon_Pole_Gladiator_Awaken": "결투의 창", "UI_EquipIcon_Pole_Zephyrus": "페보니우스 장창", "UI_EquipIcon_Pole_Zephyrus_Awaken": "페보니우스 장창", "UI_EquipIcon_Pole_Theocrat": "왕실의 장창", "UI_EquipIcon_Pole_Theocrat_Awaken": "왕실의 장창", "UI_EquipIcon_Pole_Everfrost": "용의 척추", "UI_EquipIcon_Pole_Everfrost_Awaken": "용의 척추", "UI_EquipIcon_Pole_Lapis": "천암장창", "UI_EquipIcon_Pole_Lapis_Awaken": "천암장창", "UI_EquipIcon_Pole_Bakufu": "키타인 십자창", "UI_EquipIcon_Pole_Bakufu_Awaken": "키타인 십자창", "UI_EquipIcon_Pole_Mori": "「어획」", "UI_EquipIcon_Pole_Mori_Awaken": "「어획」", "UI_EquipIcon_Pole_Maria": "파도 베는 지느러미", "UI_EquipIcon_Pole_Maria_Awaken": "파도 베는 지느러미", "UI_EquipIcon_Pole_Arakalari": "달을 꿰뚫는 화살", "UI_EquipIcon_Pole_Arakalari_Awaken": "달을 꿰뚫는 화살", "UI_EquipIcon_Pole_Windvane": "날카로운 바람의 서신", "UI_EquipIcon_Pole_Windvane_Awaken": "날카로운 바람의 서신", "UI_EquipIcon_Pole_Shanty": "협만의 노래", "UI_EquipIcon_Pole_Shanty_Awaken": "협만의 노래", "UI_EquipIcon_Pole_Vorpal": "공의의 보상", "UI_EquipIcon_Pole_Vorpal_Awaken": "공의의 보상", "UI_EquipIcon_Pole_Mechanic": "탐사용 드릴", "UI_EquipIcon_Pole_Mechanic_Awaken": "탐사용 드릴", "UI_EquipIcon_Pole_Caduceus": "위대한 사막 현자의 대답", "UI_EquipIcon_Pole_Caduceus_Awaken": "위대한 사막 현자의 대답", "UI_EquipIcon_Pole_Isikhulu": "무지개의 행적", "UI_EquipIcon_Pole_Isikhulu_Awaken": "무지개의 행적", "UI_EquipIcon_Pole_Umpakati": "산을 고정하는 못", "UI_EquipIcon_Pole_Umpakati_Awaken": "산을 고정하는 못", "UI_EquipIcon_Pole_Aoandon": "쉼터의 이야기꾼", "UI_EquipIcon_Pole_Aoandon_Awaken": "쉼터의 이야기꾼", "UI_EquipIcon_Pole_Ilmarinen": "채굴의 삽", "UI_EquipIcon_Pole_Ilmarinen_Awaken": "채굴의 삽", "UI_EquipIcon_Pole_Krivule": "신성한 제사의 지팡이", "UI_EquipIcon_Pole_Krivule_Awaken": "신성한 제사의 지팡이", "UI_EquipIcon_Pole_FaesCrystalle": "서리 숨결", "UI_EquipIcon_Pole_FaesCrystalle_Awaken": "서리 숨결", "UI_EquipIcon_Pole_GlintstonePolearm": "수호의 노래", "UI_EquipIcon_Pole_GlintstonePolearm_Awaken": "수호의 노래", "UI_EquipIcon_Catalyst_Zephyrus": "페보니우스 비전", "UI_EquipIcon_Catalyst_Zephyrus_Awaken": "페보니우스 비전", "UI_EquipIcon_Catalyst_Troupe": "음유시인의 악장", "UI_EquipIcon_Catalyst_Troupe_Awaken": "음유시인의 악장", "UI_EquipIcon_Catalyst_Fossil": "제례의 악장", "UI_EquipIcon_Catalyst_Fossil_Awaken": "제례의 악장", "UI_EquipIcon_Catalyst_Theocrat": "왕실의 비전록", "UI_EquipIcon_Catalyst_Theocrat_Awaken": "왕실의 비전록", "UI_EquipIcon_Catalyst_Resurrection": "일월의 정수", "UI_EquipIcon_Catalyst_Resurrection_Awaken": "일월의 정수", "UI_EquipIcon_Catalyst_Proto": "황금 호박 프로토타입", "UI_EquipIcon_Catalyst_Proto_Awaken": "황금 호박 프로토타입", "UI_EquipIcon_Catalyst_Exotic": "만국 항해용해도", "UI_EquipIcon_Catalyst_Exotic_Awaken": "만국 항해용해도", "UI_EquipIcon_Catalyst_Blackrock": "흑암 홍옥", "UI_EquipIcon_Catalyst_Blackrock_Awaken": "흑암 홍옥", "UI_EquipIcon_Catalyst_Truelens": "소심", "UI_EquipIcon_Catalyst_Truelens_Awaken": "소심", "UI_EquipIcon_Catalyst_Everfrost": "인동의 열매", "UI_EquipIcon_Catalyst_Everfrost_Awaken": "인동의 열매", "UI_EquipIcon_Catalyst_Outlaw": "뒷골목의 술과 시", "UI_EquipIcon_Catalyst_Outlaw_Awaken": "뒷골목의 술과 시", "UI_EquipIcon_Catalyst_Ludiharpastum": "도도코 이야기집", "UI_EquipIcon_Catalyst_Ludiharpastum_Awaken": "도도코 이야기집", "UI_EquipIcon_Catalyst_Bakufu": "하쿠신의 고리", "UI_EquipIcon_Catalyst_Bakufu_Awaken": "하쿠신의 고리", "UI_EquipIcon_Catalyst_Jyanome": "맹세의 눈동자", "UI_EquipIcon_Catalyst_Jyanome_Awaken": "맹세의 눈동자", "UI_EquipIcon_Catalyst_Arakalari": "충만의 열매", "UI_EquipIcon_Catalyst_Arakalari_Awaken": "충만의 열매", "UI_EquipIcon_Catalyst_Pleroma": "방랑하는 저녁별", "UI_EquipIcon_Catalyst_Pleroma_Awaken": "방랑하는 저녁별", "UI_EquipIcon_Catalyst_Yue": "제사의 옥", "UI_EquipIcon_Catalyst_Yue_Awaken": "제사의 옥", "UI_EquipIcon_Catalyst_Vorpal": "순수한 달빛 물결", "UI_EquipIcon_Catalyst_Vorpal_Awaken": "순수한 달빛 물결", "UI_EquipIcon_Catalyst_DandelionPoem": "끝없는 쪽빛의 노래", "UI_EquipIcon_Catalyst_DandelionPoem_Awaken": "끝없는 쪽빛의 노래", "UI_EquipIcon_Catalyst_ConchSprayer": "푸른 문양 뿔잔", "UI_EquipIcon_Catalyst_ConchSprayer_Awaken": "푸른 문양 뿔잔", "UI_EquipIcon_Catalyst_Isikhulu": "약스체의 고리", "UI_EquipIcon_Catalyst_Isikhulu_Awaken": "약스체의 고리", "UI_EquipIcon_Catalyst_Umpakati": "돌아오는 파도", "UI_EquipIcon_Catalyst_Umpakati_Awaken": "돌아오는 파도", "UI_EquipIcon_Catalyst_SeeliesLute": "금빛 류트", "UI_EquipIcon_Catalyst_SeeliesLute_Awaken": "금빛 류트", "UI_EquipIcon_Catalyst_Ilmarinen": "검은 골수의 등불", "UI_EquipIcon_Catalyst_Ilmarinen_Awaken": "검은 골수의 등불", "UI_EquipIcon_Catalyst_Ziedas": "서릿빛 새벽", "UI_EquipIcon_Catalyst_Ziedas_Awaken": "서릿빛 새벽", "UI_EquipIcon_Catalyst_SandMemoria": "왕들의 대국", "UI_EquipIcon_Catalyst_SandMemoria_Awaken": "왕들의 대국", "UI_EquipIcon_Catalyst_GlintstoneCatalyst": "충성의 메아리", "UI_EquipIcon_Catalyst_GlintstoneCatalyst_Awaken": "충성의 메아리", "UI_EquipIcon_Bow_Zephyrus": "페보니우스 활", "UI_EquipIcon_Bow_Zephyrus_Awaken": "페보니우스 활", "UI_EquipIcon_Bow_Troupe": "절현", "UI_EquipIcon_Bow_Troupe_Awaken": "절현", "UI_EquipIcon_Bow_Fossil": "제례활", "UI_EquipIcon_Bow_Fossil_Awaken": "제례활", "UI_EquipIcon_Bow_Theocrat": "왕실의 장궁", "UI_EquipIcon_Bow_Theocrat_Awaken": "왕실의 장궁", "UI_EquipIcon_Bow_Recluse": "녹슨 활", "UI_EquipIcon_Bow_Recluse_Awaken": "녹슨 활", "UI_EquipIcon_Bow_Proto": "담월 프로토타입", "UI_EquipIcon_Bow_Proto_Awaken": "담월 프로토타입", "UI_EquipIcon_Bow_Exotic": "강철궁", "UI_EquipIcon_Bow_Exotic_Awaken": "강철궁", "UI_EquipIcon_Bow_Blackrock": "흑암 배틀 보우", "UI_EquipIcon_Bow_Blackrock_Awaken": "흑암 배틀 보우", "UI_EquipIcon_Bow_Viridescent": "청록의 사냥활", "UI_EquipIcon_Bow_Viridescent_Awaken": "청록의 사냥활", "UI_EquipIcon_Bow_Outlaw": "뒷골목 사냥꾼", "UI_EquipIcon_Bow_Outlaw_Awaken": "뒷골목 사냥꾼", "UI_EquipIcon_Bow_Fleurfair": "바람 꽃의 노래", "UI_EquipIcon_Bow_Fleurfair_Awaken": "바람 꽃의 노래", "UI_EquipIcon_Bow_Nachtblind": "유야의 왈츠", "UI_EquipIcon_Bow_Nachtblind_Awaken": "유야의 왈츠", "UI_EquipIcon_Bow_Bakufu": "파마궁", "UI_EquipIcon_Bow_Bakufu_Awaken": "파마궁", "UI_EquipIcon_Bow_Predator": "포식자", "UI_EquipIcon_Bow_Predator_Awaken": "포식자", "UI_EquipIcon_Bow_Maria": "모운의 달", "UI_EquipIcon_Bow_Maria_Awaken": "모운의 달", "UI_EquipIcon_Bow_Fallensun": "노을", "UI_EquipIcon_Bow_Fallensun_Awaken": "노을", "UI_EquipIcon_Bow_Arakalari": "왕의 측근", "UI_EquipIcon_Bow_Arakalari_Awaken": "왕의 측근", "UI_EquipIcon_Bow_Fin": "메마른 연못", "UI_EquipIcon_Bow_Fin_Awaken": "메마른 연못", "UI_EquipIcon_Bow_Ibis": "꿰뚫는 따오기 부리", "UI_EquipIcon_Bow_Ibis_Awaken": "꿰뚫는 따오기 부리", "UI_EquipIcon_Bow_Gurabad": "뜨거운 태양의 후손", "UI_EquipIcon_Bow_Gurabad_Awaken": "뜨거운 태양의 후손", "UI_EquipIcon_Bow_Vorpal": "고요한 노래", "UI_EquipIcon_Bow_Vorpal_Awaken": "고요한 노래", "UI_EquipIcon_Bow_Mechanic": "거리 측정기", "UI_EquipIcon_Bow_Mechanic_Awaken": "거리 측정기", "UI_EquipIcon_Bow_Ultimatum": "축운", "UI_EquipIcon_Bow_Ultimatum_Awaken": "축운", "UI_EquipIcon_Bow_Isikhulu": "사슬 파괴자", "UI_EquipIcon_Bow_Isikhulu_Awaken": "사슬 파괴자", "UI_EquipIcon_Bow_Umpakati": "꽃장식 깃", "UI_EquipIcon_Bow_Umpakati_Awaken": "꽃장식 깃", "UI_EquipIcon_Bow_Stinger": "침묵의 사격", "UI_EquipIcon_Bow_Stinger_Awaken": "침묵의 사격", "UI_EquipIcon_Bow_Ilmarinen": "그물을 뚫는 화살", "UI_EquipIcon_Bow_Ilmarinen_Awaken": "그물을 뚫는 화살", "UI_EquipIcon_Bow_ElegguaBow": "무지개뱀의 현", "UI_EquipIcon_Bow_ElegguaBow_Awaken": "무지개뱀의 현", "UI_EquipIcon_Bow_ShatteredMirror": "옥빛 장궁", "UI_EquipIcon_Bow_ShatteredMirror_Awaken": "옥빛 장궁", "UI_EquipIcon_Bow_GlintstoneBow": "서리의 서약", "UI_EquipIcon_Bow_GlintstoneBow_Awaken": "서리의 서약", "UI_EquipIcon_Sword_Falcon": "매의 검", "UI_EquipIcon_Sword_Falcon_Awaken": "매의 검", "UI_EquipIcon_Sword_Dvalin": "천공의 검", "UI_EquipIcon_Sword_Dvalin_Awaken": "천공의 검", "UI_EquipIcon_Sword_Kunwu": "참봉의 칼날", "UI_EquipIcon_Sword_Kunwu_Awaken": "참봉의 칼날", "UI_EquipIcon_Sword_Morax": "반암결록", "UI_EquipIcon_Sword_Morax_Awaken": "반암결록", "UI_EquipIcon_Sword_Widsith": "오래된 자유의 서약", "UI_EquipIcon_Sword_Widsith_Awaken": "오래된 자유의 서약", "UI_EquipIcon_Sword_Narukami": "안개를 가르는 회광", "UI_EquipIcon_Sword_Narukami_Awaken": "안개를 가르는 회광", "UI_EquipIcon_Sword_Amenoma": "하란 월백의 후츠", "UI_EquipIcon_Sword_Amenoma_Awaken": "하란 월백의 후츠", "UI_EquipIcon_Sword_Deshret": "성현의 열쇠", "UI_EquipIcon_Sword_Deshret_Awaken": "성현의 열쇠", "UI_EquipIcon_Sword_Ayus": "잎을 가르는 빛", "UI_EquipIcon_Sword_Ayus_Awaken": "잎을 가르는 빛", "UI_EquipIcon_Sword_Regalis": "고요히 샘솟는 빛", "UI_EquipIcon_Sword_Regalis_Awaken": "고요히 샘솟는 빛", "UI_EquipIcon_Sword_Needle": "우라쿠의 미스기리", "UI_EquipIcon_Sword_Needle_Awaken": "우라쿠의 미스기리", "UI_EquipIcon_Sword_Estoc": "사면", "UI_EquipIcon_Sword_Estoc_Awaken": "사면", "UI_EquipIcon_Sword_XochitlsTube": "바위산을 맴도는 노래", "UI_EquipIcon_Sword_XochitlsTube_Awaken": "바위산을 맴도는 노래", "UI_EquipIcon_Sword_OuterSword": "창백한 섬광", "UI_EquipIcon_Sword_OuterSword_Awaken": "창백한 섬광", "UI_EquipIcon_Sword_Motsognir": "검은 침식", "UI_EquipIcon_Sword_Motsognir_Awaken": "검은 침식", "UI_EquipIcon_Sword_SilverwareSaw": "신월의 달빛", "UI_EquipIcon_Sword_SilverwareSaw_Awaken": "신월의 달빛", "UI_EquipIcon_Sword_Swanlake": "백조의 호수", "UI_EquipIcon_Sword_Swanlake_Awaken": "백조의 호수", "UI_EquipIcon_Sword_WeaponQuestSnezhnaya": "별빛검", "UI_EquipIcon_Claymore_Dvalin": "천공의 긍지", "UI_EquipIcon_Claymore_Dvalin_Awaken": "천공의 긍지", "UI_EquipIcon_Claymore_Wolfmound": "늑대의 말로", "UI_EquipIcon_Claymore_Wolfmound_Awaken": "늑대의 말로", "UI_EquipIcon_Claymore_Kunwu": "무공의 검", "UI_EquipIcon_Claymore_Kunwu_Awaken": "무공의 검", "UI_EquipIcon_Claymore_Widsith": "송뢰가 울릴 무렵", "UI_EquipIcon_Claymore_Widsith_Awaken": "송뢰가 울릴 무렵", "UI_EquipIcon_Claymore_Itadorimaru": "쇄석의 붉은 뿔", "UI_EquipIcon_Claymore_Itadorimaru_Awaken": "쇄석의 붉은 뿔", "UI_EquipIcon_Claymore_Deshret": "갈대 바다의 등대", "UI_EquipIcon_Claymore_Deshret_Awaken": "갈대 바다의 등대", "UI_EquipIcon_Claymore_GoldenVerdict": "판정", "UI_EquipIcon_Claymore_GoldenVerdict_Awaken": "판정", "UI_EquipIcon_Claymore_EmeraldSword": "산왕의 엄니", "UI_EquipIcon_Claymore_EmeraldSword_Awaken": "산왕의 엄니", "UI_EquipIcon_Claymore_RadianceSword": "타오르는 천 개의 태양", "UI_EquipIcon_Claymore_RadianceSword_Awaken": "타오르는 천 개의 태양", "UI_EquipIcon_Claymore_EnsisAquilonis": "늑대의 무용담", "UI_EquipIcon_Claymore_EnsisAquilonis_Awaken": "늑대의 무용담", "UI_EquipIcon_Claymore_CrystallineSword": "초월의 열쇠", "UI_EquipIcon_Claymore_CrystallineSword_Awaken": "초월의 열쇠", "UI_EquipIcon_Pole_Morax": "화박연", "UI_EquipIcon_Pole_Morax_Awaken": "화박연", "UI_EquipIcon_Pole_Dvalin": "천공의 마루", "UI_EquipIcon_Pole_Dvalin_Awaken": "천공의 마루", "UI_EquipIcon_Pole_Kunwu": "관홍의 창", "UI_EquipIcon_Pole_Kunwu_Awaken": "관홍의 창", "UI_EquipIcon_Pole_Homa": "호마의 지팡이", "UI_EquipIcon_Pole_Homa_Awaken": "호마의 지팡이", "UI_EquipIcon_Pole_Narukami": "예초의 번개", "UI_EquipIcon_Pole_Narukami_Awaken": "예초의 번개", "UI_EquipIcon_Pole_Santika": "식재", "UI_EquipIcon_Pole_Santika_Awaken": "식재", "UI_EquipIcon_Pole_Deshret": "적색 사막의 지팡이", "UI_EquipIcon_Pole_Deshret_Awaken": "적색 사막의 지팡이", "UI_EquipIcon_Pole_BloodMoon": "붉은 달의 형상", "UI_EquipIcon_Pole_BloodMoon_Awaken": "붉은 달의 형상", "UI_EquipIcon_Pole_Muguet": "등방울꽃의 애가", "UI_EquipIcon_Pole_Muguet_Awaken": "등방울꽃의 애가", "UI_EquipIcon_Pole_Trident": "맛의 지휘자", "UI_EquipIcon_Pole_Trident_Awaken": "맛의 지휘자", "UI_EquipIcon_Pole_Perdix": "파멸의 빛고리", "UI_EquipIcon_Pole_Perdix_Awaken": "파멸의 빛고리", "UI_EquipIcon_Pole_TummaLyhty": "피로 물든 성", "UI_EquipIcon_Pole_TummaLyhty_Awaken": "피로 물든 성", "UI_EquipIcon_Pole_Carbine": "재앙", "UI_EquipIcon_Pole_Carbine_Awaken": "재앙", "UI_EquipIcon_Catalyst_Dvalin": "천공의 두루마리", "UI_EquipIcon_Catalyst_Dvalin_Awaken": "천공의 두루마리", "UI_EquipIcon_Catalyst_Fourwinds": "사풍 원서", "UI_EquipIcon_Catalyst_Fourwinds_Awaken": "사풍 원서", "UI_EquipIcon_Catalyst_Kunwu": "속세의 자물쇠", "UI_EquipIcon_Catalyst_Kunwu_Awaken": "속세의 자물쇠", "UI_EquipIcon_Catalyst_Kaleido": "불멸의 달빛", "UI_EquipIcon_Catalyst_Kaleido_Awaken": "불멸의 달빛", "UI_EquipIcon_Catalyst_Narukami": "카구라의 진의", "UI_EquipIcon_Catalyst_Narukami_Awaken": "카구라의 진의", "UI_EquipIcon_Catalyst_Ayus": "떠오르는 천일 밤의 꿈", "UI_EquipIcon_Catalyst_Ayus_Awaken": "떠오르는 천일 밤의 꿈", "UI_EquipIcon_Catalyst_Alaya": "툴레이툴라의 기억", "UI_EquipIcon_Catalyst_Alaya_Awaken": "툴레이툴라의 기억", "UI_EquipIcon_Catalyst_Morax": "벽락의 옥", "UI_EquipIcon_Catalyst_Morax_Awaken": "벽락의 옥", "UI_EquipIcon_Catalyst_Wheatley": "현금 흐름 감독", "UI_EquipIcon_Catalyst_Wheatley_Awaken": "현금 흐름 감독", "UI_EquipIcon_Catalyst_Iudex": "영원히 샘솟는 법전", "UI_EquipIcon_Catalyst_Iudex_Awaken": "영원히 샘솟는 법전", "UI_EquipIcon_Catalyst_MountainGale": "학의 여음", "UI_EquipIcon_Catalyst_MountainGale_Awaken": "학의 여음", "UI_EquipIcon_Catalyst_MechaPufferfish": "서핑 타임", "UI_EquipIcon_Catalyst_MechaPufferfish_Awaken": "서핑 타임", "UI_EquipIcon_Catalyst_Figurines": "별지기의 시선", "UI_EquipIcon_Catalyst_Figurines_Awaken": "별지기의 시선", "UI_EquipIcon_Catalyst_SakuraFan": "나른한 새해", "UI_EquipIcon_Catalyst_SakuraFan_Awaken": "나른한 새해", "UI_EquipIcon_Catalyst_VaresaTransformer": "빛나는 마음", "UI_EquipIcon_Catalyst_VaresaTransformer_Awaken": "빛나는 마음", "UI_EquipIcon_Catalyst_MenulisRing": "밤을 엮는 거울", "UI_EquipIcon_Catalyst_MenulisRing_Awaken": "밤을 엮는 거울", "UI_EquipIcon_Catalyst_Sistrum": "진실의 함", "UI_EquipIcon_Catalyst_Sistrum_Awaken": "진실의 함", "UI_EquipIcon_Catalyst_Brisingamen": "막간의 야상곡", "UI_EquipIcon_Catalyst_Brisingamen_Awaken": "막간의 야상곡", "UI_EquipIcon_Catalyst_FairyGarden": "일곱빛 계시", "UI_EquipIcon_Catalyst_FairyGarden_Awaken": "일곱빛 계시", "UI_EquipIcon_Bow_Dvalin": "천공의 날개", "UI_EquipIcon_Bow_Dvalin_Awaken": "천공의 날개", "UI_EquipIcon_Bow_Amos": "아모스의 활", "UI_EquipIcon_Bow_Amos_Awaken": "아모스의 활", "UI_EquipIcon_Bow_Widsith": "종말 탄식의 노래", "UI_EquipIcon_Bow_Widsith_Awaken": "종말 탄식의 노래", "UI_EquipIcon_Bow_Narukami": "비뢰의 고동", "UI_EquipIcon_Bow_Narukami_Awaken": "비뢰의 고동", "UI_EquipIcon_Bow_Worldbane": "극지의 별", "UI_EquipIcon_Bow_Worldbane_Awaken": "극지의 별", "UI_EquipIcon_Bow_Kirin": "약수", "UI_EquipIcon_Bow_Kirin_Awaken": "약수", "UI_EquipIcon_Bow_Ayus": "사냥꾼의 길", "UI_EquipIcon_Bow_Ayus_Awaken": "사냥꾼의 길", "UI_EquipIcon_Bow_Pledge": "최초의 대마술", "UI_EquipIcon_Bow_Pledge_Awaken": "최초의 대마술", "UI_EquipIcon_Bow_Arcdange": "심금을 울리는 하얀 비", "UI_EquipIcon_Bow_Arcdange_Awaken": "심금을 울리는 하얀 비", "UI_EquipIcon_Bow_Qoyllorsnova": "붉은 깃 별독수리", "UI_EquipIcon_Bow_Qoyllorsnova_Awaken": "붉은 깃 별독수리", "UI_EquipIcon_Bow_Arianna": "여명이 트는 역사", "UI_EquipIcon_Bow_Arianna_Awaken": "여명이 트는 역사", "UI_EquipIcon_Bow_Alkonost": "서리 맺힌 금빛 가지", "UI_EquipIcon_Bow_Alkonost_Awaken": "서리 맺힌 금빛 가지"};
+  var ELEMENT_CARD_MAP = {Fire:"Pyro", Water:"Hydro", Electric:"Electro", Grass:"Dendro", Wind:"Anemo", Ice:"Cryo", Rock:"Geo"};
+  // 부옵션 한 번 붙을 때(1롤) 평균값 - 롤 횟수 점 표시용
+  var ROLL_AVG = {cr:3.3, cd:6.6, em:19.75, er:5.5, atk_pct:4.975, atk_flat:16.75, hp_pct:4.975, hp_flat:254, def_pct:6.2, def_flat:19.75};
+  function rollDots(cat, value){
+    var avg = ROLL_AVG[cat];
+    if (!avg) return "";
+    var n = Math.max(1, Math.min(6, Math.round(value/avg)));
+    return '<span class="r-dots" title="약 '+n+'롤">×'+n+'</span>';
+  }
+
+  // 캐릭터별 원충제한 (기본 100% 제외한 필요 보너스 %). 표에 없는 캐릭터는 기본값 100 사용.
+  var NO_ER_LIMIT = {"마비카":true, "스커크":true}; // 원충 무효(늘 상한 없음 취급)
+  var ER_LIMIT = {
+    "다이루크":20,"클레":20,"호두":30,"요이미야":30,"데히야":80,"리니":40,"아를레키노":30,"두린":60,
+    "엠버":60,"향릉":200,"베넷":200,"신염":30,"연비":50,"토마":100,"슈브르즈":50,"가명":35,
+    "모나":100,"타르탈리아":30,"산고노미야 코코미":50,"카미사토 아야토":30,"야란":120,"닐루":40,"느비예트":30,"푸리나":150,"시그윈":120,"말라니":40,"콜롬비나":120,
+    "바바라":100,"행추":120,"캔디스":100,"달리아":100,"아이노":110,
+    "진":100,"벤티":80,"소":30,"카에데하라 카즈하":80,"방랑자":30,
+    "한운":100,"차스카":30,"유메미즈키 미즈키":80,
+    "설탕":100,"사유":150,"시카노인 헤이조":30,"파루잔":150,"리넷":50,"남연":100,"이파":30,
+    "야호다":150,
+    "플린스":30,"각청":20,"라이덴 쇼군":170,"야에 미코":60,"사이노":70,"클로린드":40,"바레사":30,"이네파":80,
+    "리사":100,"레이저":20,"북두":100,"피슬":20,"쿠죠 사라":150,"쿠키 시노부":60,"도리":100,"세토스":50,"올로룬":50,"얀사":120,
+    "타이나리":30,"나히다":80,"알하이탐":30,"백출":100,"에밀리":40,"키니치":30,"라우마":120,
+    "네페르":35,
+    "콜레이":100,"요요":100,"카베":100,"키라라":80,
+    "치치":120,"감우":30,"유라":40,"카미사토 아야카":30,"신학":100,"라이오슬리":20,
+    "시틀라리":80,"에스코피에":100,
+    "케이아":100,"중운":50,"디오나":100,"로자리아":100,"레일라":50,"미카":100,"프레미네":40,"샤를로트":120,"에일로이":30,
+    "종려":50,"알베도":30,"아라타키 이토":30,"나비아":40,"치오리":20,"실로닌":85,
+    "응광":20,"노엘":65,"고로":100,"운근":120,"카치나":80
+  };
+  var SUPPORT_NOTE = "평균 포지션이 서포터인 캐릭터로 분류돼 치명옵션비중 감산이 적용되지 않아요.";
+
+  // ---------------------------------------------------------------- helpers
+  function round(n,d){ var f=Math.pow(10,d); return Math.round((n+Number.EPSILON)*f)/f; }
+  // Enka's SideIconName uses the character's internal dev codename, which for a chunk of
+  // characters (mostly older ones, or wordplay-y Harbinger names) doesn't resemble their
+  // real display name at all, so the plain string match below misses them entirely.
+  var CODENAME_ALIAS = {
+    Qin: "Jean", Ambor: "Amber", Noel: "Noelle", Feiyan: "Yanfei", Tohma: "Thoma",
+    Shougun: "Raiden Shogun", Yae: "Yae Miko", Heizo: "Shikanoin Heizou",
+    Alhatham: "Alhaitham", Baizhuer: "Baizhu", Linette: "Lynette", Liney: "Lyney",
+    Olorun: "Ororon", SkirkNew: "Skirk", Momoka: "Kirara", MarionetteNew: "Sandrone", Liuyun: "Xianyun"
+  };
+  function findCharByEnka(sideIcon){
+    var name = sideIcon.replace("UI_AvatarIcon_Side_","").replace("UI_AvatarIcon_","");
+    var aliasEn = CODENAME_ALIAS[name];
+    var c = CHARACTERS.find(function(c){
+      return (aliasEn && c.en === aliasEn) || c.en === name || c.en.endsWith(" "+name) || c.en.replace(/\s+/g,"").toLowerCase()===name.toLowerCase();
+    });
+    return c ? {def:c, iconName:name} : null;
+  }
+
+  // Enka's character catalog (CHARMAP_URL) hasn't been updated past avatarId ~10000124,
+  // so every character released after that patch (Columbina onward) is completely absent
+  // from it — not a codename mismatch, the entry just doesn't exist. Skills/constellation
+  // icon data for these is patched in locally here, sourced from gi.yatta.moe's API.
+  var LOCAL_CHAR_OVERRIDES = {
+    10000125: { ko:"콜롬비나", Element:"Water", SideIconName:"UI_AvatarIcon_Side_Columbina",
+      SkillOrder:[11251,11252,11255], Skills:{"11251":"Skill_A_Catalyst_MD","11252":"Skill_S_Columbina_01","11255":"Skill_E_Columbina_01"},
+      Consts:["UI_Talent_S_Columbina_01","UI_Talent_S_Columbina_02","UI_Talent_U_Columbina_01","UI_Talent_S_Columbina_03","UI_Talent_U_Columbina_02","UI_Talent_S_Columbina_04"] },
+    10000126: { ko:"자백", Element:"Rock", SideIconName:"UI_AvatarIcon_Side_Zibai",
+      SkillOrder:[11261,11262,11265], Skills:{"11261":"Skill_A_01","11262":"Skill_S_Zibai_01","11265":"Skill_E_Zibai_01"},
+      Consts:["UI_Talent_S_Zibai_01","UI_Talent_S_Zibai_02","UI_Talent_U_Zibai_01","UI_Talent_S_Zibai_03","UI_Talent_U_Zibai_02","UI_Talent_S_Zibai_04"] },
+    10000127: { ko:"일루가", Element:"Rock", SideIconName:"UI_AvatarIcon_Side_Illuga",
+      SkillOrder:[11271,11272,11275], Skills:{"11271":"Skill_A_03","11272":"Skill_S_Illuga_01","11275":"Skill_E_Illuga_01"},
+      Consts:["UI_Talent_S_Illuga_01","UI_Talent_S_Illuga_02","UI_Talent_U_Illuga_01","UI_Talent_S_Illuga_03","UI_Talent_U_Illuga_02","UI_Talent_S_Illuga_04"] },
+    10000128: { ko:"바르카", Element:"Wind", SideIconName:"UI_AvatarIcon_Side_Varka",
+      SkillOrder:[11281,11282,11285], Skills:{"11281":"Skill_A_04","11282":"Skill_S_Varka_01","11285":"Skill_E_Varka_01"},
+      Consts:["UI_Talent_S_Varka_01","UI_Talent_S_Varka_02","UI_Talent_U_Varka_01","UI_Talent_S_Varka_03","UI_Talent_U_Varka_02","UI_Talent_S_Varka_04"] },
+    10000129: { ko:"로엔", Element:"Ice", SideIconName:"UI_AvatarIcon_Side_Lohen",
+      SkillOrder:[11291,11292,11295], Skills:{"11291":"Skill_A_03","11292":"Skill_S_Lohen_01","11295":"Skill_E_Lohen_01"},
+      Consts:["UI_Talent_S_Lohen_01","UI_Talent_S_Lohen_02","UI_Talent_U_Lohen_01","UI_Talent_S_Lohen_03","UI_Talent_U_Lohen_02","UI_Talent_S_Lohen_04"] },
+    10000130: { ko:"린네아", Element:"Rock", SideIconName:"UI_AvatarIcon_Side_Linnea",
+      SkillOrder:[11301,11302,11305], Skills:{"11301":"Skill_A_02","11302":"Skill_S_Linnea_01","11305":"Skill_E_Linnea_01"},
+      Consts:["UI_Talent_S_Linnea_01","UI_Talent_S_Linnea_02","UI_Talent_U_Linnea_01","UI_Talent_S_Linnea_03","UI_Talent_U_Linnea_02","UI_Talent_S_Linnea_04"] },
+    10000131: { ko:"니콜", Element:"Fire", SideIconName:"UI_AvatarIcon_Side_Nicole",
+      SkillOrder:[11311,11312,11315], Skills:{"11311":"Skill_A_Catalyst_MD","11312":"Skill_S_Nicole_01","11315":"Skill_E_Nicole_01"},
+      Consts:["UI_Talent_S_Nicole_01","UI_Talent_S_Nicole_02","UI_Talent_U_Nicole_01","UI_Talent_S_Nicole_03","UI_Talent_U_Nicole_02","UI_Talent_S_Nicole_04"] },
+    10000132: { ko:"프루네", Element:"Wind", SideIconName:"UI_AvatarIcon_Side_Prune",
+      SkillOrder:[11321,11322,11325], Skills:{"11321":"Skill_A_Catalyst_MD","11322":"Skill_S_Prune_01","11325":"Skill_E_Prune_01"},
+      Consts:["UI_Talent_S_Prune_01","UI_Talent_S_Prune_02","UI_Talent_U_Prune_01","UI_Talent_S_Prune_03","UI_Talent_U_Prune_02","UI_Talent_S_Prune_04"] },
+    10000133: { ko:"산드로네", Element:"Ice", SideIconName:"UI_AvatarIcon_Side_MarionetteNew",
+      SkillOrder:[11331,11332,11335], Skills:{"11331":"Skill_A_04","11332":"Skill_S_MarionetteNew_01","11335":"Skill_E_MarionetteNew_01"},
+      Consts:["UI_Talent_S_MarionetteNew_01","UI_Talent_S_MarionetteNew_02","UI_Talent_U_MarionetteNew_01","UI_Talent_S_MarionetteNew_03","UI_Talent_U_MarionetteNew_02","UI_Talent_S_MarionetteNew_04"] },
+    10000140: { ko:"보댜니차", Element:"Water", SideIconName:"UI_AvatarIcon_Side_Vodyanitsa",
+      SkillOrder:[11401,11402,11405], Skills:{"11401":"Skill_A_Catalyst_MD","11402":"Skill_S_Vodyanitsa_01","11405":"Skill_E_Vodyanitsa_01"},
+      Consts:["UI_Talent_S_Vodyanitsa_01","UI_Talent_S_Vodyanitsa_02","UI_Talent_U_Vodyanitsa_01","UI_Talent_S_Vodyanitsa_03","UI_Talent_U_Vodyanitsa_02","UI_Talent_S_Vodyanitsa_04"] },
+    10000143: { ko:"베스나", Element:"Wind", SideIconName:"UI_AvatarIcon_Side_Vesna",
+      SkillOrder:[11431,11432,11435], Skills:{"11431":"Skill_A_01","11432":"Skill_S_Vesna_01","11435":"Skill_E_Vesna_01"},
+      Consts:["UI_Talent_S_Vesna_01","UI_Talent_S_Vesna_02","UI_Talent_U_Vesna_01","UI_Talent_S_Vesna_03","UI_Talent_U_Vesna_02","UI_Talent_S_Vesna_04"] },
+    10000148: { ko:"알료샤", Element:"Electric", SideIconName:"UI_AvatarIcon_Side_Alyosha",
+      SkillOrder:[11481,11482,11485], Skills:{"11481":"Skill_A_03","11482":"Skill_S_Alyosha_01","11485":"Skill_E_Alyosha_01"},
+      Consts:["UI_Talent_S_Alyosha_01","UI_Talent_S_Alyosha_02","UI_Talent_U_Alyosha_01","UI_Talent_S_Alyosha_03","UI_Talent_U_Alyosha_02","UI_Talent_S_Alyosha_04"] },
+    10000150: { ko:"오데트", Element:"Ice", SideIconName:"UI_AvatarIcon_Side_Odette",
+      SkillOrder:[11501,11502,11505], Skills:{"11501":"Skill_A_01","11502":"Skill_S_Odette_01","11505":"Skill_E_Odette_01"},
+      Consts:["UI_Talent_S_Odette_01","UI_Talent_S_Odette_02","UI_Talent_U_Odette_01","UI_Talent_S_Odette_03","UI_Talent_U_Odette_02","UI_Talent_S_Odette_04"] }
+  };
+
+  // ---------------------------------------------------------------- score engine
+  function scoreCharacter(avatar, charDef){
+    var build = CHAR_BUILDS[charDef.ko] || {v:[], h:[]};
+    var pieces = avatar.equipList.filter(function(e){ return e.reliquary; });
+    var sums = {};
+    var mainCatByEquip = {};
+    function add(cat, v){ sums[cat] = (sums[cat]||0) + v; }
+    pieces.forEach(function(p){
+      var main = p.flat.reliquaryMainstat, mc = PROP2CAT[main.mainPropId];
+      if (mc) add(mc, main.statValue);
+      var mu = MAIN2CAT[main.mainPropId];
+      if (mu) mainCatByEquip[p.flat.equipType] = mu;
+      (p.flat.reliquarySubstats||[]).forEach(function(s){
+        var sc = PROP2CAT[s.appendPropId];
+        if (sc) add(sc, s.statValue);
+      });
+    });
+    var mainMaxSum = {};
+    ["EQUIP_SHOES","EQUIP_RING","EQUIP_DRESS"].forEach(function(slot){
+      var cat = mainCatByEquip[slot];
+      if (cat) mainMaxSum[cat] = (mainMaxSum[cat]||0) + MAXMAIN[cat];
+    });
+
+    var weaponEntry = avatar.equipList.find(function(e){ return e.weapon; });
+    var weaponBaseAtk = (weaponEntry && weaponEntry.flat.weaponStats && weaponEntry.flat.weaponStats[0]) ? weaponEntry.flat.weaponStats[0].statValue : 0;
+    var base = {hp:charDef.hp, atk:charDef.atk + weaponBaseAtk, def:charDef.def};
+    function pctScore(cat, offset){
+      var flatEquiv = (sums[cat+"_flat"]||0) + (sums[cat+"_pct"]||0)/100*base[cat];
+      var pct = (flatEquiv - offset)/base[cat]*100 - (mainMaxSum[cat]||0);
+      return pct/AVG[cat];
+    }
+    var raw = {};
+    raw.hp = pctScore("hp", 4780);
+    raw.atk = pctScore("atk", 311);
+    raw.def = pctScore("def", 0);
+    raw.em = ((sums.em||0) - (mainMaxSum.em||0))/AVG.em;
+    raw.cr = ((sums.cr||0) - (mainMaxSum.cr||0))/AVG.cr;
+    raw.cd = ((sums.cd||0) - (mainMaxSum.cd||0))/AVG.cd;
+    var erGiven = (sums.er||0) - (mainMaxSum.er||0);
+    var erScore = erGiven/AVG.er;
+    var limit = NO_ER_LIMIT[charDef.ko] ? Infinity : (ER_LIMIT[charDef.ko] !== undefined ? ER_LIMIT[charDef.ko] : 100);
+    var fullER = 100 + (sums.er||0);
+    var threshold = 100 + limit;
+    if (isFinite(threshold) && fullER > threshold) erScore -= (fullER-threshold)/AVG.er;
+    raw.er = erScore;
+
+    var vSet = {};
+    (build.v||[]).forEach(function(k){
+      if (k==="atk_pct"||k==="atk_flat") vSet.atk=true;
+      else if (k==="hp_pct"||k==="hp_flat") vSet.hp=true;
+      else if (k==="def_pct"||k==="def_flat") vSet.def=true;
+      else vSet[k]=true;
+    });
+    var validCats = Object.keys(vSet);
+    var validSum = 0, perCat = {}, halfCorrected = {};
+    validCats.forEach(function(c){
+      var s = raw[c]||0;
+      var isHalf = (c==="atk"&&build.h.indexOf("atk")>=0)||(c==="hp"&&build.h.indexOf("hp")>=0)||(c==="em"&&build.h.indexOf("em")>=0);
+      halfCorrected[c] = isHalf;
+      if (isHalf) s*=0.5;
+      perCat[c] = s;
+      validSum += s;
+    });
+    var isSupporter = vSet.cr===undefined && vSet.cd===undefined;
+    var deduction = 1, critRatio = null;
+    if (!isSupporter && validSum !== 0){
+      var critSum = (raw.cr||0) + (raw.cd||0);
+      critRatio = critSum/validSum;
+      if (critRatio < 0.5) deduction = 1 + (-5/validSum);
+    }
+    deduction = Math.max(0, deduction);
+    var adjusted = validSum*deduction;
+    // 0.5 보정(효율 떨어지는 옵션)은 분모(유효옵션 개수) 산정에서는 빠짐 — 원본 봇 실측값으로 검증됨
+    var n = validCats.filter(function(c){ return !halfCorrected[c]; }).length;
+    var denom = n>=4?40:(n===3?35:(n===2?25:20));
+    var final100 = adjusted/denom*100;
+    var rank = final100<=0 ? "측정불가" : final100<40 ? "D" : final100<52.5 ? "C" : final100<65 ? "B" : final100<77.5 ? "A" : final100<90 ? "S" : "SS";
+    // 성유물에서만 나온 순수 기여량(주옵 차감 전) — "성유물 상세 스탯" 표시용
+    var displayTotals = {
+      hp: (sums.hp_flat||0) + (sums.hp_pct||0)/100*base.hp,
+      atk: (sums.atk_flat||0) + (sums.atk_pct||0)/100*base.atk,
+      def: (sums.def_flat||0) + (sums.def_pct||0)/100*base.def,
+      em: sums.em||0, cr: sums.cr||0, cd: sums.cd||0, er: sums.er||0
+    };
+    var cv = round((sums.cr||0)*2 + (sums.cd||0), 1);
+    return {
+      raw:raw, perCat:perCat, validCats:validCats, isSupporter:isSupporter,
+      validSum:round(validSum,2), critRatio: critRatio!==null?round(critRatio*100,1):null,
+      deduction:round(deduction,3), denom:denom, final100:round(final100,1), rank:rank,
+      sums:sums, mainMaxSum:mainMaxSum, displayTotals:displayTotals, cv:cv
+    };
+  }
+
+  // ---------------------------------------------------------------- state
+  var idmapPromise = null;
+  function loadIdmap(){
+    if (!idmapPromise){
+      idmapPromise = fetch(CHARMAP_URL).then(function(r){ return r.json(); });
+    }
+    return idmapPromise;
+  }
+
+  var uidInput = document.getElementById("uidInput");
+  var loadBtn = document.getElementById("loadBtn");
+  var loadStatus = document.getElementById("loadStatus");
+  var charListCard = document.getElementById("charListCard");
+  var charGrid = document.getElementById("charGrid");
+  var resultWrap = document.getElementById("resultWrap");
+
+  function setStatus(text, isErr){
+    loadStatus.hidden = !text;
+    loadStatus.textContent = text || "";
+    loadStatus.className = "status-msg" + (isErr ? " err" : "");
+  }
+
+  var currentData = null; // {enka, idmap}
+
+  // ---------------------------------------------------------------- 최근 조회 UID
+  var RECENT_KEY = "gi_char_calc_recent_uids";
+  var recentRow = document.getElementById("recentRow");
+  function loadRecentUids(){
+    try { return JSON.parse(localStorage.getItem(RECENT_KEY) || "[]"); } catch(e){ return []; }
+  }
+  function saveRecentUid(uid, nickname){
+    try {
+      var list = loadRecentUids().filter(function(r){ return r.uid !== uid; });
+      list.unshift({uid:uid, nickname:nickname||""});
+      localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, 6)));
+    } catch(e){}
+  }
+  function removeRecentUid(uid){
+    try {
+      var list = loadRecentUids().filter(function(r){ return r.uid !== uid; });
+      localStorage.setItem(RECENT_KEY, JSON.stringify(list));
+    } catch(e){}
+  }
+  function renderRecentChips(){
+    var list = loadRecentUids();
+    recentRow.hidden = list.length === 0;
+    recentRow.innerHTML = list.map(function(r){
+      var label = r.nickname ? (r.nickname + " · " + r.uid) : r.uid;
+      return '<span class="recent-chip" data-uid="' + r.uid + '">' + label + '<span class="x" data-remove="' + r.uid + '">✕</span></span>';
+    }).join("");
+  }
+  recentRow.addEventListener("click", function(e){
+    var removeUid = e.target.getAttribute && e.target.getAttribute("data-remove");
+    if (removeUid){
+      e.stopPropagation();
+      removeRecentUid(removeUid);
+      renderRecentChips();
+      return;
+    }
+    var chip = e.target.closest(".recent-chip");
+    if (chip){
+      uidInput.value = chip.getAttribute("data-uid");
+      loadBtn.click();
+    }
+  });
+  renderRecentChips();
+
+  loadBtn.addEventListener("click", function(){
+    var uid = uidInput.value.trim();
+    if (!/^\d{3,12}$/.test(uid)){ setStatus("올바른 UID를 입력해주세요", true); return; }
+    loadBtn.disabled = true;
+    setStatus("불러오는 중...", false);
+    charListCard.hidden = true;
+    resultWrap.style.display = "none";
+
+    Promise.all([
+      fetch(ENKA_PROXY + "/uid/" + uid).then(function(r){
+        if (!r.ok) return r.json().then(function(j){ throw new Error(j.error || ("HTTP " + r.status)); }, function(){ throw new Error("HTTP " + r.status); });
+        return r.json();
+      }),
+      loadIdmap()
+    ]).then(function(res){
+      var enka = res[0], idmap = res[1];
+      if (!enka.avatarInfoList || !enka.avatarInfoList.length){
+        setStatus("캐릭터를 찾지 못했어요. 게임 내에서 캐릭터 상세정보에 진열해두었는지 확인해주세요", true);
+        return;
+      }
+      currentData = {enka:enka, idmap:idmap};
+      renderCharList();
+      setStatus("닉네임 \"" + (enka.playerInfo.nickname||"") + "\" · 캐릭터 " + enka.avatarInfoList.length + "명을 불러왔어요", false);
+      saveRecentUid(uid, enka.playerInfo.nickname);
+      renderRecentChips();
+    }).catch(function(e){
+      setStatus("불러오지 못했어요 (" + e.message + "). UID가 맞는지, 게임 내 캐릭터 진열이 켜져 있는지 확인해주세요", true);
+    }).finally(function(){
+      loadBtn.disabled = false;
+    });
+  });
+
+  uidInput.addEventListener("keydown", function(e){ if (e.key === "Enter") loadBtn.click(); });
+
+  function renderCharList(){
+    charGrid.innerHTML = "";
+    currentData.enka.avatarInfoList.forEach(function(av, i){
+      var entry = currentData.idmap[av.avatarId] || LOCAL_CHAR_OVERRIDES[av.avatarId];
+      if (!entry || !entry.SideIconName) return; // 데이터 원본에 정보가 비어있는 캐릭터(예: 최신 캐릭터 등록 누락)는 건너뛰어요
+      var matched = findCharByEnka(entry.SideIconName);
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "char-btn";
+      var iconName = matched ? matched.iconName : entry.SideIconName.replace("UI_AvatarIcon_Side_","");
+      btn.innerHTML =
+        '<img src="' + ENKA_UI + "UI_AvatarIcon_" + iconName + '.png" alt="' + (matched?matched.def.ko:iconName) + '" loading="lazy">' +
+        '<div class="char-btn__lv">Lv.' + av.propMap["4001"].val + '</div>';
+      btn.addEventListener("click", function(){
+        Array.prototype.forEach.call(charGrid.children, function(c){ c.classList.remove("active"); });
+        btn.classList.add("active");
+        showResult(av, matched);
+      });
+      charGrid.appendChild(btn);
+    });
+    charListCard.hidden = false;
+  }
+
+  // fightPropMap(최종 합산 스탯)의 숫자 id -> GenshinCard가 쓰는 FIGHT_PROP_* 이름
+  var NUM2ENUM = {
+    "2000":"FIGHT_PROP_HP","2001":"FIGHT_PROP_ATTACK","2002":"FIGHT_PROP_DEFENSE",
+    "28":"FIGHT_PROP_ELEMENT_MASTERY","20":"FIGHT_PROP_CRITICAL","22":"FIGHT_PROP_CRITICAL_HURT",
+    "23":"FIGHT_PROP_CHARGE_EFFICIENCY","26":"FIGHT_PROP_HEAL_ADD","30":"FIGHT_PROP_PHYSICAL_ADD_HURT",
+    "40":"FIGHT_PROP_FIRE_ADD_HURT","41":"FIGHT_PROP_ELEC_ADD_HURT","42":"FIGHT_PROP_WATER_ADD_HURT",
+    "43":"FIGHT_PROP_GRASS_ADD_HURT","44":"FIGHT_PROP_WIND_ADD_HURT","45":"FIGHT_PROP_ROCK_ADD_HURT","46":"FIGHT_PROP_ICE_ADD_HURT"
+  };
+  var PCT_NUM = {"20":1,"22":1,"23":1,"26":1,"30":1,"40":1,"41":1,"42":1,"43":1,"44":1,"45":1,"46":1};
+
+  function buildCardData(av, charDef, elemEntry, iconName, result){
+    var fp = av.fightPropMap || {};
+    var statsArr = ["2000","2001","2002","28","20","22","23"].map(function(id){
+      return {key: NUM2ENUM[id], value: PCT_NUM[id] ? (fp[id]||0)*100 : Math.round(fp[id]||0)};
+    });
+    ["40","41","42","43","44","45","46","30","26"].forEach(function(id){
+      if (fp[id] > 0.001) statsArr.push({key: NUM2ENUM[id], value: fp[id]*100});
+    });
+
+    var weaponEntry = av.equipList.find(function(e){ return e.weapon; });
+    var weaponData = {};
+    if (weaponEntry){
+      var ws = weaponEntry.flat.weaponStats || [];
+      weaponData = {
+        icon: ENKA_UI + weaponEntry.flat.icon + ".png",
+        rarity: weaponEntry.flat.rankLevel,
+        name: WEAPON_NAME[weaponEntry.flat.icon] || weaponEntry.flat.icon,
+        baseAtk: Math.round((ws[0]||{}).statValue || 0),
+        sub: ws[1] ? {key: ws[1].appendPropId, value: ws[1].statValue} : null,
+        refinement: (weaponEntry.weapon.affixMap ? Object.values(weaponEntry.weapon.affixMap)[0] : 0) + 1,
+        level: weaponEntry.weapon.level,
+        maxLevel: 90
+      };
+    }
+
+    var pieces = av.equipList.filter(function(e){ return e.reliquary; })
+      .sort(function(a,b){ return SLOT_ORDER.indexOf(a.flat.equipType) - SLOT_ORDER.indexOf(b.flat.equipType); });
+    var artifacts = pieces.map(function(p){
+      var main = p.flat.reliquaryMainstat;
+      var rollCounts = GenshinCard.countRolls((p.reliquary||{}).appendPropIdList);
+      var subs = (p.flat.reliquarySubstats||[]).map(function(s){
+        return {key: s.appendPropId, value: s.statValue, rolls: rollCounts[s.appendPropId] || 0};
+      });
+      return {
+        icon: ENKA_UI + p.flat.icon + ".png",
+        main: {key: main.mainPropId, value: main.statValue},
+        subs: subs
+      };
+    });
+
+    var setCounts = {};
+    pieces.forEach(function(p){ var id = String(p.flat.setId); setCounts[id] = (setCounts[id]||0) + 1; });
+    var sets = Object.keys(setCounts).filter(function(id){ return setCounts[id] >= 2; }).map(function(id){
+      var piece = pieces.find(function(p){ return String(p.flat.setId) === id; });
+      return {
+        name: SET_NAME[id] || id,
+        count: setCounts[id] >= 4 ? 4 : 2, // 세트 효과는 2/4개일 때만 있음
+        icon: piece ? ENKA_UI + piece.flat.icon + ".png" : ""
+      };
+    });
+
+    var consts = (elemEntry && elemEntry.Consts) || [];
+    var constCount = (av.talentIdList||[]).length;
+    var constIcons = consts.map(function(name){ return ENKA_UI + name + ".png"; });
+
+    var skillOrder = (elemEntry && elemEntry.SkillOrder) || [];
+    var skillsMap = (elemEntry && elemEntry.Skills) || {};
+    var skillLv = av.skillLevelMap || {};
+    var talents = skillOrder.filter(function(sid){ return skillsMap[sid]; }).map(function(sid){
+      return { icon: ENKA_UI + skillsMap[sid] + ".png", level: skillLv[sid] || 0, boosted: false };
+    });
+
+    return {
+      name: charDef.ko,
+      nickname: (currentData.enka.playerInfo && currentData.enka.playerInfo.nickname) || "",
+      uid: currentData.enka.uid,
+      level: av.propMap["4001"].val,
+      maxLevel: 90,
+      friendship: (av.fetterInfo && av.fetterInfo.expLevel) || 0,
+      element: ELEMENT_CARD_MAP[elemEntry && elemEntry.Element] || "Electro",
+      splash: ENKA_UI + "UI_Gacha_AvatarImg_" + iconName + ".png",
+      artPosition: "50% 15%",
+      constellation: constCount,
+      constellationIcons: constIcons,
+      talents: talents,
+      weapon: weaponData,
+      stats: statsArr,
+      sets: sets,
+      artifacts: artifacts,
+      rating: result.final100
+    };
+  }
+
+  var SD_ORDER = ["hp","atk","def","em","cr","cd","er"];
+  function sdIconImg(cat){ return '<img src="icons/'+cat+'.png" alt="">'; }
+  function fmtRawStat(cat, v){
+    var sign = v >= 0 ? "+" : "";
+    if (cat==="cr"||cat==="cd"||cat==="er") return sign+v.toFixed(1)+"%";
+    return sign+Math.round(v);
+  }
+  function renderScoreDetail(charDef, result){
+    document.getElementById("sdTitle").textContent = charDef.ko + " 성유물 상세 스탯";
+    document.getElementById("sdRaw").innerHTML = SD_ORDER.map(function(c){
+      return '<span class="sd-chip">'+sdIconImg(c)+STAT_LABEL[c]+" "+fmtRawStat(c, result.displayTotals[c])+"</span>";
+    }).join("");
+    document.getElementById("sdScore").innerHTML = SD_ORDER.map(function(c){
+      if (result.validCats.indexOf(c) < 0) return '<span class="sd-chip invalid">'+sdIconImg(c)+"무효</span>";
+      var disp = round(result.perCat[c]/result.denom*100, 2);
+      return '<span class="sd-chip">'+sdIconImg(c)+disp+"점</span>";
+    }).join("");
+    document.getElementById("sdCv").textContent = result.cv.toFixed(1) + " CV";
+    document.getElementById("sdCrit").textContent = result.isSupporter ? "0%" : (result.critRatio!==null ? result.critRatio.toFixed(1)+"%" : "-");
+  }
+
+  function showResult(av, matched){
+    resultWrap.style.display = "block";
+    if (!matched){
+      document.getElementById("resultCapture").innerHTML = "이 캐릭터는 아직 지원하지 않아요";
+      document.querySelector(".sd-card").hidden = true;
+      return;
+    }
+    document.querySelector(".sd-card").hidden = false;
+    var charDef = matched.def, iconName = matched.iconName;
+    var result = scoreCharacter(av, charDef);
+
+    var elemEntry = currentData.idmap[av.avatarId] || LOCAL_CHAR_OVERRIDES[av.avatarId];
+    var cardData = buildCardData(av, charDef, elemEntry, iconName, result);
+    var captureEl = document.getElementById("resultCapture");
+    var captureW = captureEl.clientWidth || 1100;
+    GenshinCard.renderBuildCard(captureEl, cardData, {width: captureW});
+    renderScoreDetail(charDef, result);
+
+    resultWrap.scrollIntoView({behavior:"smooth", block:"start"});
+  }
+
+  // ---------------------------------------------------------------- download
+  document.getElementById("downloadBtn").addEventListener("click", function(){
+    var target = document.getElementById("resultCapture");
+    if (typeof html2canvas === "undefined"){ alert("이미지 저장 기능을 불러오지 못했어요. 인터넷 연결을 확인해주세요"); return; }
+    html2canvas(target, {backgroundColor:null, useCORS:true, scale:2}).then(function(canvas){
+      var nameEl = target.querySelector(".ak-name b");
+      var a = document.createElement("a");
+      a.download = "성유물점수_" + (nameEl ? nameEl.textContent : "캐릭터") + ".png";
+      a.href = canvas.toDataURL("image/png");
+      a.click();
+    }).catch(function(){
+      alert("이미지 저장에 실패했어요. 다시 시도해주세요");
+    });
+  });
+
+  // ---------------------------------------------------------------- popup: 점수 계산 방식
+  var methodBtn = document.getElementById("methodBtn");
+  var methodModal = document.getElementById("methodModal");
+  var openedModal = null;
+  function openModal(el, returnTo){
+    el.hidden = false;
+    openedModal = el;
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    var closeBtn = el.querySelector(".dialog__close");
+    if (closeBtn) closeBtn.focus();
+  }
+  function closeModal(){
+    if (!openedModal) return;
+    openedModal.hidden = true;
+    openedModal = null;
+    document.documentElement.style.overflow = "";
+    document.body.style.overflow = "";
+    methodBtn.focus();
+  }
+  methodBtn.addEventListener("click", function(){ openModal(methodModal); });
+  methodModal.addEventListener("click", function(e){
+    if (e.target === methodModal || e.target.closest(".dialog__close")) closeModal();
+  });
+  document.addEventListener("keydown", function(e){ if (e.key === "Escape") closeModal(); });
+
+})();
+</script>
+</body></html>

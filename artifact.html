@@ -1,0 +1,1868 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>성유물 점수 계산기</title>
+<meta name="description" content="원신 성유물 스크린샷을 올리면 부옵션을 자동으로 읽고 0~100점으로 점수를 계산해 주는 무료 계산기">
+<meta property="og:type" content="website"><meta property="og:title" content="성유물 점수 계산기"><meta property="og:description" content="스크린샷만 올리면 성유물 부옵션을 읽어서 0~100점으로 계산해 드려요">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23162220'/%3E%3Cpath d='M32 8l18 24-18 24-18-24z' fill='%23D9A85B'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&family=IBM+Plex+Mono:wght@500;600&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<script src="tess/tesseract.min.js"></script>
+<style>
+  :root{
+    --bg:#E8EFE9;
+    --surface:#FBFDFB;
+    --surface-2:#EFF4F0;
+    --ink:#14201A;
+    --ink-soft:#3C4A41;
+    --ink-faint:#5B6A60;
+    --border:#C9D5CB;
+    --border-strong:#A5B5AA;
+    --accent:#B8862F;
+    --accent-text:#83590A;
+    --ok:#1E9E5A;
+    --t0:#1B8D4D;
+    --t1:#A46505;
+    --t2:#057F8B;
+    --t3:#1B73D3;
+    --t4:#C03C9F;
+    --t5:#CB4247;
+    --danger:#B83C2B;
+    --shadow: 0 1px 2px rgba(20,32,26,0.06), 0 8px 24px rgba(20,32,26,0.08);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0E1513;
+      --surface:#16211E;
+      --surface-2:#1D2C28;
+      --ink:#EFF4EF;
+      --ink-soft:#C5D1C8;
+      --ink-faint:#95A69B;
+      --border:#2B3A36;
+      --border-strong:#41544B;
+      --accent:#D9A85B;
+      --accent-text:#EBC27A;
+      --ok:#3DCB86;
+      --t0:#3FB673;
+      --t1:#D9932B;
+      --t2:#2BB3C0;
+      --t3:#4A9CF0;
+      --t4:#E05DC0;
+      --t5:#EE6468;
+      --danger:#EE8C7B;
+      --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 12px 28px rgba(0,0,0,0.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0E1513;
+    --surface:#16211E;
+    --surface-2:#1D2C28;
+    --ink:#EFF4EF;
+    --ink-soft:#C5D1C8;
+    --ink-faint:#95A69B;
+    --border:#2B3A36;
+    --border-strong:#41544B;
+    --accent:#D9A85B;
+    --accent-text:#EBC27A;
+    --ok:#3DCB86;
+    --t0:#3FB673;
+    --t1:#D9932B;
+    --t2:#2BB3C0;
+    --t3:#4A9CF0;
+    --t4:#E05DC0;
+    --t5:#EE6468;
+    --danger:#EE8C7B;
+    --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 12px 28px rgba(0,0,0,0.4);
+  }
+
+  *{box-sizing:border-box;}
+  [hidden]{display:none !important;}
+  html{ -webkit-text-size-adjust:100%; }
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Noto Sans KR','Pretendard','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
+    font-size:16px;
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{ max-width:820px; margin:0 auto; padding:0 20px 72px; }
+  h1,h2,h3{ margin:0; text-wrap:balance; }
+  h1{ font-family:'Gowun Batang','Noto Sans KR',serif; font-weight:700; }
+  h2,h3{ font-weight:700; letter-spacing:-0.01em; }
+  .mono{ font-family:'IBM Plex Mono',ui-monospace,monospace; font-variant-numeric:tabular-nums; }
+  select, input, button{ font-family:inherit; }
+
+  .topbar{ padding:36px 0 22px; }
+  .eyebrow{ font-size:0.8rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--accent-text); font-weight:700; }
+  .topbar h1{ font-size:clamp(1.9rem,5vw,2.6rem); margin-top:6px; line-height:1.25; }
+
+  .card{
+    background:var(--surface); border:1px solid var(--border); border-radius:18px;
+    box-shadow:var(--shadow); padding:22px 24px; margin-bottom:16px;
+  }
+  .card h2{ font-size:1.1rem; margin-bottom:12px; }
+  .card .hint{ font-size:0.9rem; color:var(--ink-soft); margin:-6px 0 12px; display:block; }
+
+  /* ---------- character picker ---------- */
+  .char-search{ position:relative; }
+  .char-search input[type="text"]{ height:50px; font-size:1.02rem; padding:0 16px; border-radius:12px; }
+  .char-confirm{
+    margin-top:8px; font-size:0.9rem; color:var(--ink-soft);
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  }
+  .char-confirm:empty{ display:none; }
+  .char-confirm.unmatched{ color:var(--ink-faint); }
+
+  /* ---------- slot picker ---------- */
+  .slot-picker{ display:flex; gap:8px; flex-wrap:wrap; }
+  .slot-btn{
+    flex:1 1 auto; min-width:92px; min-height:48px; text-align:center; background:var(--surface-2);
+    border:1px solid var(--border); color:var(--ink-soft); padding:8px 10px;
+    border-radius:12px; font-size:0.95rem; font-weight:500; cursor:pointer;
+    transition:background-color .15s ease, border-color .15s ease, color .15s ease;
+  }
+  .slot-btn:hover{ border-color:var(--border-strong); color:var(--ink); }
+  .slot-btn.active{
+    border-color:var(--accent); color:var(--accent-text); font-weight:700;
+    background:color-mix(in srgb, var(--accent) 16%, var(--surface));
+    box-shadow:inset 0 0 0 1px var(--accent);
+  }
+  .slot-btn:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-visible{
+    outline:3px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset:2px;
+  }
+
+  /* ---------- result ---------- */
+  .result__top{ display:flex; flex-wrap:wrap; align-items:flex-end; gap:16px; justify-content:space-between; }
+  .result__score{ display:flex; align-items:baseline; gap:10px; }
+  .result__score .num{ font-size:clamp(3rem,11vw,4.4rem); font-weight:600; line-height:1; }
+  .result__score .of100{ color:var(--ink-faint); font-size:1.15rem; }
+  .result__label{ font-size:1.08rem; font-weight:700; margin-bottom:8px; }
+  .pill{
+    display:inline-flex; align-items:center; gap:8px;
+    padding:7px 16px; border-radius:999px;
+    font-size:1rem; font-weight:700; white-space:nowrap;
+  }
+  .pill__dot{ width:9px; height:9px; border-radius:50%; background:currentColor; }
+  .gauge-track{
+    position:relative; height:12px; border-radius:999px; overflow:hidden;
+    display:flex; border:1px solid var(--border); margin-top:20px;
+  }
+  .gauge-track .zone{ display:block; height:100%; opacity:0.28; }
+  .gauge-fill{
+    position:absolute; left:0; top:0; bottom:0; width:0; background:var(--border-strong);
+    transition:width 0.25s ease, background-color 0.25s ease;
+  }
+  .gauge-cut{ position:absolute; top:0; bottom:0; width:2px; background:var(--surface); transform:translateX(-1px); }
+  .gauge-ticks{ position:relative; height:1.3em; margin-top:7px; font-size:0.8rem; color:var(--ink-faint); }
+  .gauge-ticks span{ position:absolute; top:0; transform:translateX(-50%); }
+  .gauge-ticks span:first-child{ transform:none; }
+  .gauge-ticks span:last-child{ transform:translateX(-100%); }
+  #score100{ transition:color 0.25s ease; }
+  @media (prefers-reduced-motion: reduce){
+    .gauge-fill, #score100{ transition:none; }
+  }
+  .stat-row{
+    display:flex; gap:32px; margin-top:20px; padding-top:18px;
+    border-top:1px solid var(--border); flex-wrap:wrap;
+  }
+  .stat-row .item .k{ font-size:0.88rem; color:var(--ink-soft); font-weight:500; }
+  .stat-row .item .v{ font-size:1.5rem; font-weight:600; margin-top:2px; }
+  .notes{ margin-top:18px; padding-top:16px; border-top:1px solid var(--border); font-size:0.9rem; color:var(--ink-soft); line-height:1.7; }
+  .notes p{ margin:0 0 8px; }
+  .notes .notes__warn{ margin:12px 0 0; color:var(--ink-faint); font-size:0.86rem; }
+
+  /* ---------- checkboxes ---------- */
+  .check{ display:inline-flex; align-items:center; gap:12px; cursor:pointer; color:var(--ink); font-size:1rem; }
+  .cbx{
+    appearance:none; -webkit-appearance:none; flex:none; margin:0; cursor:pointer;
+    width:26px; height:26px; border-radius:8px; border:2px solid var(--border-strong);
+    background:var(--surface-2); display:inline-grid; place-content:center;
+    transition:background-color .12s ease, border-color .12s ease, box-shadow .12s ease;
+  }
+  .cbx::after{
+    content:""; width:13px; height:7px; margin-top:-2px;
+    border-left:3px solid #fff; border-bottom:3px solid #fff;
+    transform:rotate(-45deg) scale(0); transition:transform .12s ease;
+  }
+  .cbx:hover:not(:disabled){ border-color:var(--ok); }
+  .cbx:checked{
+    background:var(--ok); border-color:var(--ok);
+    box-shadow:0 0 0 4px color-mix(in srgb, var(--ok) 22%, transparent);
+  }
+  .cbx:checked::after{ transform:rotate(-45deg) scale(1); }
+  .cbx:disabled{ cursor:not-allowed; opacity:0.4; }
+  .cbx:checked:disabled{ opacity:1; box-shadow:none; }
+
+  .corr-row{
+    display:flex; align-items:center; padding:12px 0; border-bottom:1px solid var(--border);
+  }
+  .corr-row:first-child{ padding-top:4px; }
+  .corr-row:last-child{ border-bottom:none; padding-bottom:0; }
+
+  .substat-row{ display:grid; grid-template-columns:auto 1fr 104px; gap:12px; align-items:center; margin-bottom:12px; }
+  .valid-check{ display:inline-flex; cursor:pointer; }
+  select, input[type="number"], input[type="text"], input[type="password"]{
+    background:var(--surface-2); border:1px solid var(--border-strong); color:var(--ink);
+    border-radius:10px; height:46px; padding:0 14px; font-size:1rem; width:100%;
+  }
+  select{
+    appearance:none; -webkit-appearance:none; padding-right:38px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M1.5 1.5 7 7l5.5-5.5' fill='none' stroke='%238A9A90' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 14px center;
+  }
+  input::placeholder{ color:var(--ink-faint); opacity:0.85; }
+  select:disabled, input[type="number"]:disabled{ opacity:0.8; cursor:not-allowed; }
+
+  /* ---------- buttons ---------- */
+  .reset-btn, .manual-btn, .edit-btn, .foot-btn{
+    cursor:pointer; background:var(--surface-2); color:var(--ink-soft);
+    border:1px solid var(--border-strong); min-height:42px; padding:0 18px; border-radius:12px;
+    font-size:0.92rem; font-weight:600;
+    transition:border-color .15s ease, color .15s ease, background-color .15s ease;
+  }
+  .reset-btn:hover, .manual-btn:hover, .edit-btn:hover, .foot-btn:hover{ border-color:var(--accent); color:var(--accent-text); }
+  .manual-btn:disabled{ opacity:0.5; cursor:not-allowed; }
+  .apply-btn{
+    cursor:pointer; background:var(--accent); color:#16211B; border:1px solid var(--accent);
+    min-height:44px; padding:0 30px; border-radius:12px; font-size:1rem; font-weight:700;
+  }
+  .apply-btn:hover{ filter:brightness(1.07); }
+
+  /* ---------- photo upload ---------- */
+  .photo-btn{
+    position:relative; flex:2 1 0; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+    text-align:center; padding:26px 16px; min-height:112px;
+    border:2px dashed var(--accent); border-radius:14px; color:var(--accent-text);
+    background:color-mix(in srgb, var(--accent) 8%, var(--surface));
+    transition:background-color 0.15s ease, border-color 0.15s ease;
+  }
+  .photo-btn:hover, .photo-btn:focus-within{ background:color-mix(in srgb, var(--accent) 16%, var(--surface)); }
+  .photo-btn__title{ font-size:1.05rem; font-weight:700; line-height:1.4; }
+  .photo-btn__sub{ font-size:0.88rem; font-weight:400; color:var(--ink-soft); }
+  .drag-over .photo-btn{ background:color-mix(in srgb, var(--accent) 28%, var(--surface)); border-style:solid; }
+  .photo-btn input[type="file"]{
+    position:absolute; width:1px; height:1px; overflow:hidden; opacity:0; pointer-events:none;
+  }
+  .photo-status{ margin-top:12px; font-size:0.95rem; color:var(--ink-soft); }
+  .photo-status.err{ color:var(--danger); font-weight:500; }
+  .link-btn{
+    margin-top:8px; padding:0; background:none; border:none; cursor:pointer;
+    font-size:0.9rem; color:var(--ink-soft); text-decoration:underline; text-underline-offset:4px;
+  }
+  .link-btn:hover{ color:var(--accent-text); }
+
+  /* ---------- input card ---------- */
+  .card-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+  .card-head h2{ margin-bottom:0; }
+  .input-actions{ display:flex; gap:10px; }
+  .input-actions .manual-btn{ flex:1 1 0; min-height:112px; font-size:1rem; }
+  @media (max-width:480px){ .input-actions{ flex-direction:column; } .input-actions .manual-btn{ min-height:48px; } }
+  .editor-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:8px; }
+  .editor-actions .edit-btn{ flex:0 0 auto; padding:0 26px; min-height:44px; }
+  #subEditor{ margin-top:18px; }
+
+  /* ---------- footer buttons ---------- */
+  .foot-actions{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:8px; }
+  .foot-btn{ min-height:46px; padding:0 22px; font-size:0.95rem; }
+
+  /* ---------- popups ---------- */
+  .modal{
+    position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center;
+    padding:56px 20px 24px; background:rgba(4,9,7,0.8);
+  }
+  .modal > img{ max-width:100%; max-height:100%; object-fit:contain; border-radius:10px; box-shadow:0 10px 40px rgba(0,0,0,0.5); }
+  .modal__close{
+    position:absolute; top:12px; right:14px; width:42px; height:42px; border-radius:50%; cursor:pointer;
+    border:1px solid rgba(255,255,255,0.35); background:rgba(0,0,0,0.5); color:#fff; font-size:1.1rem;
+  }
+  .modal__close:hover{ background:rgba(255,255,255,0.18); }
+  .dialog{
+    position:relative; width:min(780px,100%); max-height:100%; overflow:auto;
+    background:var(--surface); color:var(--ink); border:1px solid var(--border); border-radius:20px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.5); padding:28px 30px 32px;
+  }
+  .dialog__close{
+    position:absolute; top:14px; right:14px; width:40px; height:40px; border-radius:50%; cursor:pointer;
+    border:1px solid var(--border-strong); background:var(--surface-2); color:var(--ink-soft); font-size:1.05rem;
+  }
+  .dialog__close:hover{ border-color:var(--accent); color:var(--accent-text); }
+  .dialog h2{ font-size:1.4rem; margin:0 44px 16px 0; }
+  .dialog h3{ font-size:1.05rem; margin:22px 0 8px; color:var(--accent-text); }
+  .dialog p{ margin:0 0 10px; color:var(--ink-soft); font-size:0.98rem; line-height:1.75; }
+  .dialog ul{ margin:0 0 10px; padding-left:1.2em; color:var(--ink-soft); font-size:0.98rem; line-height:1.8; }
+  .dialog li{ margin-bottom:2px; }
+  .dialog b{ color:var(--ink); }
+  .formula{
+    margin:6px 0 12px; padding:10px 14px; border-radius:10px; background:var(--surface-2);
+    border:1px solid var(--border); font-size:0.95rem; color:var(--ink); line-height:1.7;
+  }
+  .avg-table{ width:100%; border-collapse:collapse; margin:6px 0 12px; font-size:0.95rem; }
+  .avg-table th, .avg-table td{ padding:8px 12px; text-align:left; border-bottom:1px solid var(--border); }
+  .avg-table th{ color:var(--ink-faint); font-weight:500; font-size:0.86rem; }
+  .avg-table td:last-child, .avg-table th:last-child{ text-align:right; }
+  .table-search{ margin:4px 0 6px; }
+  .table-sec{ margin-top:22px; }
+  .table-sec h3{ margin-top:0; }
+  .table-group{ display:flex; flex-wrap:wrap; gap:6px; margin:0 0 10px; }
+  .chip{
+    display:inline-block; padding:3px 11px; border-radius:999px; font-size:0.92rem; line-height:1.6;
+    background:var(--surface-2); border:1px solid var(--border); color:var(--ink);
+  }
+  .chip--cond{ color:var(--ink-faint); border-style:dashed; }
+  .table-note{ margin:6px 0 0; font-size:0.9rem; color:var(--ink-soft); }
+  .table-legend{ font-size:0.9rem; color:var(--ink-faint); }
+
+  /* ---------- info popover ---------- */
+  .info-btn{
+    display:inline-grid; place-content:center; width:20px; height:20px; margin-left:2px;
+    border-radius:50%; border:1px solid var(--border-strong); background:var(--surface-2);
+    color:var(--ink-faint); font-size:0.72rem; font-weight:700; line-height:1; cursor:pointer;
+    vertical-align:middle;
+  }
+  .info-btn:hover{ border-color:var(--accent); color:var(--accent-text); }
+  .k .info-btn{ margin-left:4px; }
+  .popover{
+    position:fixed; z-index:60; max-width:280px; padding:12px 14px; border-radius:12px;
+    background:var(--surface); border:1px solid var(--border-strong); box-shadow:var(--shadow);
+    font-size:0.88rem; color:var(--ink-soft); line-height:1.6;
+  }
+  .score-disclaimer{ margin:18px 0 0; padding-top:16px; border-top:1px solid var(--border); font-size:0.86rem; color:var(--ink-faint); line-height:1.7; }
+
+  /* ---------- genshin-flavored visual polish ---------- */
+  body{
+    background:
+      radial-gradient(1100px 620px at 12% -10%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 62%),
+      radial-gradient(900px 560px at 108% 10%, color-mix(in srgb, var(--t2) 13%, transparent), transparent 58%),
+      radial-gradient(820px 520px at 50% 118%, color-mix(in srgb, var(--t4) 9%, transparent), transparent 62%),
+      var(--bg);
+    background-attachment:fixed;
+  }
+  @media (max-width:700px){ body{ background-attachment:scroll; } }
+
+  .eyebrow::before, .eyebrow::after{ content:"◆"; font-size:0.5em; color:var(--accent); opacity:0.8; vertical-align:0.15em; }
+  .eyebrow::before{ margin-right:9px; }
+  .eyebrow::after{ margin-left:9px; }
+  .home-link{
+    display:inline-flex; align-items:center; gap:6px; margin-bottom:12px;
+    font-size:0.85rem; font-weight:600; color:var(--ink-faint); text-decoration:none;
+  }
+  .home-link:hover{ color:var(--accent-text); }
+  .topbar h1{ position:relative; padding-bottom:16px; }
+  .topbar h1::after{
+    content:""; position:absolute; left:0; bottom:0; width:104px; height:3px; border-radius:2px;
+    background:linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 30%, transparent));
+  }
+
+  .card{
+    position:relative; overflow:hidden; border-radius:16px;
+    background:
+      radial-gradient(460px 240px at 10% -14%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 65%),
+      var(--surface);
+  }
+  .card::before{
+    content:""; position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg, transparent, var(--accent) 22%, var(--accent) 78%, transparent);
+    opacity:0.55;
+  }
+  .card h2, .dialog h2{ font-family:'Gowun Batang','Noto Sans KR',serif; letter-spacing:-0.01em; }
+  .card h2::before, .dialog h2::before{ content:"◆"; font-size:0.6em; color:var(--accent); opacity:0.85; margin-right:9px; vertical-align:0.1em; }
+  .result__label{ font-family:'Gowun Batang','Noto Sans KR',serif; }
+
+  .slot-btn.active::before{ content:"◆"; font-size:0.62em; margin-right:6px; opacity:0.85; vertical-align:0.12em; }
+
+  .result__score .num{ text-shadow:0 0 26px color-mix(in srgb, currentColor 45%, transparent); }
+  .gauge-fill{
+    background:linear-gradient(160deg,
+      color-mix(in srgb, var(--fill, var(--border-strong)) 80%, white 20%) 0%,
+      var(--fill, var(--border-strong)) 55%,
+      color-mix(in srgb, var(--fill, var(--border-strong)) 78%, black 22%) 100%);
+    box-shadow:0 0 14px 0 color-mix(in srgb, var(--fill, transparent) 55%, transparent);
+  }
+  .pill{
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, currentColor 35%, transparent),
+      0 2px 10px -2px color-mix(in srgb, currentColor 45%, transparent);
+  }
+
+  .apply-btn{
+    background:linear-gradient(135deg,
+      color-mix(in srgb, var(--accent) 88%, white 12%) 0%, var(--accent) 55%,
+      color-mix(in srgb, var(--accent) 85%, black 15%) 100%);
+    box-shadow:0 4px 16px -4px color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+  .apply-btn:hover{ box-shadow:0 6px 20px -4px color-mix(in srgb, var(--accent) 65%, transparent); }
+  .photo-btn{ box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent); }
+
+  .foot-actions{ margin-top:26px; padding-top:22px; border-top:1px solid var(--border); }
+  .site-footer{ margin-top:26px; padding:0 8px; text-align:center; }
+  .site-footer p{ margin:0 0 6px; font-size:0.78rem; line-height:1.6; color:var(--ink-faint); }
+  .site-footer__credit{ font-size:0.8rem; font-weight:600; color:var(--ink-soft); }
+</style>
+
+<div class="wrap">
+  <header class="topbar">
+    <a class="home-link" href="index.html">← 처음으로</a>
+    <div class="eyebrow">Genshin Impact · Artifact Calculator</div>
+    <h1>성유물 점수 계산기</h1>
+  </header>
+
+  <div class="card">
+    <h2>캐릭터 선택</h2>
+    <div class="char-search">
+      <input type="text" id="charSearch" list="charList" placeholder="캐릭터 이름 검색" autocomplete="off">
+      <datalist id="charList"></datalist>
+    </div>
+    <div class="char-confirm" id="charConfirm"></div>
+  </div>
+
+  <div class="card">
+    <h2>착용 부위</h2>
+    <div class="slot-picker" id="slotPicker"></div>
+  </div>
+
+  <div class="card" id="inputCard">
+    <div class="card-head">
+      <h2>부옵션 입력</h2>
+      <button class="reset-btn" id="resetBtn" type="button">초기화</button>
+    </div>
+    <div class="input-actions">
+      <label class="photo-btn" for="photoInput">
+        <span class="photo-btn__title" id="photoBtnLabel"></span>
+        <span class="photo-btn__sub" id="photoBtnSub"></span>
+        <input type="file" id="photoInput" accept="image/*">
+      </label>
+      <button class="manual-btn" id="manualBtn" type="button">직접 입력</button>
+    </div>
+    <div class="photo-status" id="photoStatus" hidden></div>
+    <button class="link-btn" id="photoViewBtn" type="button" hidden>원본 사진 보기</button>
+    <div id="subEditor" hidden>
+      <div id="subRows"></div>
+      <div class="editor-actions">
+        <button class="edit-btn" id="editBtn" type="button" hidden>수정</button>
+        <button class="apply-btn" id="applyBtn" type="button" hidden>적용</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="corrCard">
+    <h2>보정 <button class="info-btn" type="button" data-info="corr" aria-label="보정 설명 보기">?</button></h2>
+    <div id="corrList"></div>
+  </div>
+
+  <div class="card result" id="resultCard">
+    <div class="result__top">
+      <div>
+        <div class="result__label">최종 성유물 점수</div>
+        <div class="result__score">
+          <span class="num mono" id="score100">0.0</span>
+          <span class="of100">/ 100</span>
+        </div>
+      </div>
+      <span class="pill" id="gradePill" hidden><span class="pill__dot"></span><span id="gradeLabel"></span></span>
+    </div>
+    <div class="gauge-track" id="gaugeTrack">
+      <span class="zone" style="width:10%;background:var(--t0)"></span>
+      <span class="zone" style="width:20%;background:var(--t1)"></span>
+      <span class="zone" style="width:20%;background:var(--t2)"></span>
+      <span class="zone" style="width:20%;background:var(--t3)"></span>
+      <span class="zone" style="width:20%;background:var(--t4)"></span>
+      <span class="zone" style="width:10%;background:var(--t5)"></span>
+      <div class="gauge-fill" id="gaugeFill"></div>
+      <i class="gauge-cut" style="left:10%"></i>
+      <i class="gauge-cut" style="left:30%"></i>
+      <i class="gauge-cut" style="left:50%"></i>
+      <i class="gauge-cut" style="left:70%"></i>
+      <i class="gauge-cut" style="left:90%"></i>
+    </div>
+    <div class="gauge-ticks">
+      <span style="left:0">0</span><span style="left:10%">10</span><span style="left:30%">30</span><span style="left:50%">50</span><span style="left:70%">70</span><span style="left:90%">90</span><span style="left:100%">100</span>
+    </div>
+    <div class="stat-row">
+      <div class="item"><div class="k">부옵션 효율 <button class="info-btn" type="button" data-info="eff" aria-label="부옵션 효율 설명 보기">?</button></div><div class="v mono" id="efficiency">0.0</div></div>
+      <div class="item"><div class="k">치명타 붙은 횟수 <button class="info-btn" type="button" data-info="crit" aria-label="치명타 붙은 횟수 설명 보기">?</button></div><div class="v mono" id="critCount">0.0</div></div>
+    </div>
+    <p class="score-disclaimer">성유물 평가 점수는 주관적 요소이며, 절대적인 지표가 될 수 없습니다. 세트효과 및 주옵션이 캐릭터와 맞지 않으면 점수는 무효입니다.</p>
+  </div>
+
+  <div class="foot-actions">
+    <button class="foot-btn" id="methodBtn" type="button">성유물 계산 방식</button>
+    <button class="foot-btn" id="tableBtn" type="button">성유물 유효옵션 캐릭터표</button>
+  </div>
+
+  <footer class="site-footer">
+    <p>이 사이트는 개인이 만든 팬 제작 계산기이며, 원신(Genshin Impact) 및 호요버스(HoYoverse)와 관련이 없습니다.<br>계산 결과는 참고용이며, 정확성을 보장하지 않습니다.</p>
+    <p>본 계산기는 서비스를 종료한 디스코드 봇 '푸리나'를 기반으로 제작되었습니다.</p>
+    <p>© All rights reserved by HoYoverse. Other properties belong to their respective owners.</p>
+    <p class="site-footer__credit">제작자 : 민트</p>
+  </footer>
+</div>
+
+<div class="popover" id="infoPopover" role="tooltip" hidden></div>
+
+<div class="modal" id="photoModal" role="dialog" aria-modal="true" aria-label="원본 사진" hidden>
+  <button class="modal__close" id="photoModalClose" type="button" aria-label="닫기">✕</button>
+  <img id="photoModalImg" alt="올린 원본 사진">
+</div>
+
+<div class="modal" id="methodModal" role="dialog" aria-modal="true" aria-labelledby="methodTitle" hidden>
+  <div class="dialog">
+    <button class="dialog__close" type="button" aria-label="닫기">✕</button>
+    <h2 id="methodTitle">성유물 계산 방식</h2>
+
+    <h3>1. 부옵션 평균값</h3>
+    <p>부옵션이 한 번 강화될 때 붙는 수치의 평균값을 기준으로 삼습니다. 옵션 수치를 이 평균값으로 나누면, 평균적으로 몇 번 강화된 것과 같은지 알 수 있습니다.</p>
+    <table class="avg-table">
+      <thead><tr><th>옵션</th><th>평균값</th></tr></thead>
+      <tbody>
+        <tr><td>치명타 확률</td><td>3.3%</td></tr>
+        <tr><td>치명타 피해</td><td>6.6%</td></tr>
+        <tr><td>원소충전효율</td><td>5.5%</td></tr>
+        <tr><td>원소마스터리</td><td>19.75</td></tr>
+        <tr><td>공격력%</td><td>4.975%</td></tr>
+        <tr><td>HP%</td><td>4.975%</td></tr>
+        <tr><td>방어력%</td><td>6.2%</td></tr>
+        <tr><td>공격력 (고정 수치)</td><td>16.75</td></tr>
+        <tr><td>HP (고정 수치)</td><td>254</td></tr>
+        <tr><td>방어력 (고정 수치)</td><td>19.75</td></tr>
+      </tbody>
+    </table>
+
+    <h3>2. 유효옵션 점수</h3>
+    <p>유효로 체크한 옵션만 점수에 더합니다.</p>
+    <ul>
+      <li><b>% 옵션, 원소마스터리</b> : 수치 ÷ 평균값</li>
+      <li><b>고정 수치 옵션 (공격력·HP·방어력)</b> : 캐릭터의 기초 스탯(Lv.90, 무기 제외)을 반영해서 환산합니다.</li>
+    </ul>
+    <div class="formula">(수치 ÷ 평균값) ÷ 기초 스탯 × 100 ÷ 기준값<br>기준값 : 공격력·HP는 4.975, 방어력은 6.2</div>
+    <p>기초 스탯이 큰 캐릭터일수록 고정 수치 옵션의 점수가 낮게 계산됩니다.</p>
+
+    <h3>3. 보정</h3>
+    <p>공격력·HP·원소마스터리 중 유효하긴 하지만 다른 옵션에 비해 효율이 떨어지는 경우, 보정을 선택하면 그 옵션(% 옵션과 고정 수치 모두)의 점수를 절반(×0.5)으로 계산합니다.</p>
+
+    <h3>4. 최종 점수</h3>
+    <div class="formula">합산 점수 = 유효옵션 점수의 합 × 10<br>최종 점수 = 합산 점수 ÷ 부위 기준값 × 100</div>
+    <ul>
+      <li>생명의 꽃 · 죽음의 깃털 : 100</li>
+      <li>시간의 모래 : 90</li>
+      <li>공간의 성배 · 이성의 왕관 : 80</li>
+    </ul>
+    <p>부위 기준값을 넘으면 100점을 넘을 수도 있습니다.</p>
+
+    <h3>5. 부옵션 효율, 치명타 붙은 횟수</h3>
+    <div class="formula">부옵션 효율 = (모든 부옵션의 수치 ÷ 평균값)의 합 × 10<br>치명타 붙은 횟수 = 치명타 확률 ÷ 3.3 + 치명타 피해 ÷ 6.6</div>
+    <p>유효로 체크했는지와 상관없이 부옵션 4개를 모두 계산합니다.</p>
+  </div>
+</div>
+
+<div class="modal" id="tableModal" role="dialog" aria-modal="true" aria-labelledby="tableTitle" hidden>
+  <div class="dialog">
+    <button class="dialog__close" type="button" aria-label="닫기">✕</button>
+    <h2 id="tableTitle">성유물 유효옵션 캐릭터표</h2>
+    <input type="text" class="table-search" id="tableSearch" placeholder="캐릭터 이름 검색" autocomplete="off">
+    <p class="table-legend">(6돌) 같은 돌파 표시가 붙은 항목은 캐릭터를 골라도 자동으로 체크되지 않아요.</p>
+    <div id="tableBody"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STAT_TYPES = [
+    {key:"cr",       label:"치명타 확률%",   avg:3.3,   kind:"pct",  corr:null},
+    {key:"cd",       label:"치명타 피해%",   avg:6.6,   kind:"pct",  corr:null},
+    {key:"em",       label:"원소마스터리",    avg:19.75, kind:"pct",  corr:"em"},
+    {key:"er",       label:"원소충전효율%",  avg:5.5,   kind:"pct",  corr:null},
+    {key:"atk_pct",  label:"공격력%",        avg:4.975, kind:"pct",  corr:"atk"},
+    {key:"atk_flat", label:"공격력",         avg:16.75, kind:"flat", base:"atk", corr:"atk"},
+    {key:"hp_pct",   label:"체력%",          avg:4.975, kind:"pct",  corr:"hp"},
+    {key:"hp_flat",  label:"체력",           avg:254,   kind:"flat", base:"hp",  corr:"hp"},
+    {key:"def_pct",  label:"방어력%",        avg:6.2,   kind:"pct",  corr:null},
+    {key:"def_flat", label:"방어력",         avg:19.75, kind:"flat", base:"def", corr:null}
+  ];
+  var STAT_MAP = {};
+  STAT_TYPES.forEach(function(s){ STAT_MAP[s.key] = s; });
+
+  var CORR_GROUPS = [
+    {key:"atk", label:"공격력 보정"},
+    {key:"hp",  label:"HP 보정"},
+    {key:"em",  label:"원소마스터리 보정"}
+  ];
+
+  var SLOTS = [
+    {key:"flower",  label:"생명의 꽃",   denom:100},
+    {key:"feather", label:"죽음의 깃털", denom:100},
+    {key:"sands",   label:"시간의 모래", denom:90},
+    {key:"goblet",  label:"공간의 성배", denom:80},
+    {key:"circlet", label:"이성의 왕관", denom:80}
+  ];
+
+  // Genshin Impact Fandom Wiki - Character Comparison (Lv.90 base stats, no weapon)
+  var CHARACTERS = [
+    ["아이노","Aino",11201,242,607],["알베도","Albedo",13225,251,876],["알하이탐","Alhaitham",13348,313,781],
+    ["에일로이","Aloy",10898,233,676],["알료샤","Alyosha",11962,265,702],["엠버","Amber",9461,223,600],
+    ["아라타키 이토","Arataki Itto",12858,227,959],["아를레키노","Arlecchino",13103,342,764],
+    ["백출","Baizhu",13348,192,499],["바바라","Barbara",9787,159,668],["북두","Beidou",13049,225,648],
+    ["베넷","Bennett",12397,191,771],["캔디스","Candace",10874,212,682],["샤를로트","Charlotte",10766,173,546],
+    ["차스카","Chasca",9796,346,614],["슈브르즈","Chevreuse",11962,193,604],["치오리","Chiori",11437,322,953],
+    ["중운","Chongyun",10983,223,648],["시틀라리","Citlali",11633,126,763],["클로린드","Clorinde",12956,337,783],
+    ["콜레이","Collei",9787,199,600],["콜롬비나","Columbina",14695,95,514],["사이노","Cyno",12490,318,859],
+    ["달리아","Dahlia",12506,189,559],["데히야","Dehya",15674,265,627],["다이루크","Diluc",12980,334,783],
+    ["디오나","Diona",9569,212,600],["도리","Dori",12397,223,723],["두린","Durin",12429,346,822],
+    ["에밀리","Emilie",13568,334,730],["에스코피에","Escoffier",13348,346,731],["유라","Eula",13225,342,750],
+    ["파루잔","Faruzan",9569,196,627],["피슬","Fischl",9189,244,593],["플린스","Flins",12490,351,808],
+    ["프레미네","Freminet",12071,254,708],["푸리나","Furina",15307,243,695],["가명","Gaming",11418,301,702],
+    ["감우","Ganyu",9796,334,630],["고로","Gorou",9569,182,648],["호두","Hu Tao",15552,106,876],
+    ["얀사","Iansan",10657,257,638],["이파","Ifa",10081,178,605],["일루가","Illuga",11962,191,813],
+    ["이네파","Ineffa",12613,330,827],["야호다","Jahoda",9646,223,580],["진","Jean",14695,239,768],
+    ["카치나","Kachina",11799,216,792],["카에데하라 카즈하","Kaedehara Kazuha",13348,296,806],
+    ["케이아","Kaeya",11636,223,791],["카미사토 아야카","Kamisato Ayaka",12858,342,783],
+    ["카미사토 아야토","Kamisato Ayato",13715,298,768],["카베","Kaveh",11962,233,750],["각청","Keqing",13103,322,799],
+    ["키니치","Kinich",12858,332,801],["키라라","Kirara",12179,223,546],["클레","Klee",10286,310,614],
+    ["쿠죠 사라","Kujou Sara",9569,195,627],["쿠키 시노부","Kuki Shinobu",12288,212,750],
+    ["남연","Lan Yan",9243,250,580],["라우마","Lauma",10653,254,668],["레일라","Layla",11092,216,655],
+    ["린네아","Linnea",9894,143,906],["리사","Lisa",9569,231,573],["로엔","Lohen",12858,344,783],
+    ["리넷","Lynette",12397,231,711],["리니","Lyney",11021,318,537],["마비카","Mavuika",12552,358,791],
+    ["미카","Mika",12506,223,713],["모나","Mona",10409,287,653],["말라니","Mualani",15184,181,570],
+    ["나히다","Nahida",10360,298,630],["나비아","Navia",12650,351,793],["네페르","Nefer",12703,344,799],
+    ["느비예트","Neuvillette",14695,208,576],["니콜","Nicole",10409,342,562],["닐루","Nilou",15184,229,728],
+    ["응광","Ningguang",9787,212,573],["노엘","Noelle",12071,191,798],["오데트","Odette",12980,334,786],
+    ["올로룬","Ororon",9243,244,586],["프루네","Prune",9678,220,580],["치치","Qiqi",12368,287,922],
+    ["라이덴 쇼군","Raiden Shogun",12907,337,789],["레이저","Razor",11962,233,750],["로자리아","Rosaria",12288,240,709],
+    ["산드로네","Sandrone",13225,342,752],["산고노미야 코코미","Sangonomiya Kokomi",13470,234,657],
+    ["사유","Sayu",11853,244,744],["세토스","Sethos",9787,227,559],["신학","Shenhe",12992,303,830],
+    ["시카노인 헤이조","Shikanoin Heizou",10657,225,683],["시그윈","Sigewinne",13348,192,499],
+    ["스커크","Skirk",12417,358,806],["설탕","Sucrose",9243,169,702],["타르탈리아","Tartaglia",13103,301,814],
+    ["토마","Thoma",10331,201,750],["타이나리","Tighnari",10849,267,630],
+    ["바레사","Varesa",12699,356,781],["바르카","Varka",12613,352,795],["벤티","Venti",10531,263,668],
+    ["방랑자","Wanderer",10164,327,607],["라이오슬리","Wriothesley",13592,310,763],["향릉","Xiangling",10874,225,668],
+    ["한운","Xianyun",10409,334,572],["소","Xiao",12735,349,799],["실로닌","Xilonen",12405,275,929],
+    ["행추","Xingqiu",10222,201,757],["신염","Xinyan",11201,248,798],["야에 미코","Yae Miko",10372,339,568],
+    ["연비","Yanfei",9352,240,586],["요요","Yaoyao",12288,212,750],["야란","Yelan",14450,243,547],
+    ["요이미야","Yoimiya",10164,322,614],["유메미즈키 미즈키","Yumemizuki Mizuki",12735,215,757],
+    ["운근","Yun Jin",10657,191,734],["종려","Zhongli",14695,251,737],["자백","Zibai",12919,224,956],
+    ["베스나","Vesna",13262,354,730],["보댜니차","Vodyanitsa",14818,108,484]
+  ].map(function(a){ return {ko:a[0], en:a[1], hp:a[2], atk:a[3], def:a[4]}; });
+
+  // BEGIN CHAR_BUILDS - generated from 성유물 점수 유효옵션 캐릭터표.md
+  // v: stats that count as valid, h: groups scored with the x0.5 correction.
+  // Entries marked with a constellation condition (6돌, 4돌이상) are left out on purpose.
+  var CHAR_BUILDS = {
+    "아이노":{v:["cr","cd","em","er"],h:[]},
+    "알베도":{v:["cr","cd","er","atk_pct","atk_flat","def_pct","def_flat"],h:["atk"]},
+    "알하이탐":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["atk"]},
+    "에일로이":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["em"]},
+    "알료샤":{v:["cr","er","atk_pct","atk_flat"],h:[]},
+    "엠버":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:[]},
+    "아라타키 이토":{v:["cr","cd","er","atk_pct","atk_flat","def_pct","def_flat"],h:["atk"]},
+    "아를레키노":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["em"]},
+    "백출":{v:["er","hp_pct","hp_flat"],h:[]},
+    "바바라":{v:["er","hp_pct","hp_flat"],h:[]},
+    "북두":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "베넷":{v:["er","hp_pct","hp_flat"],h:[]},
+    "캔디스":{v:["cr","er","hp_pct","hp_flat"],h:[]},
+    "샤를로트":{v:["er","atk_pct","atk_flat"],h:[]},
+    "차스카":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["em"]},
+    "슈브르즈":{v:["er","hp_pct","hp_flat"],h:[]},
+    "치오리":{v:["cr","cd","atk_pct","atk_flat","def_pct","def_flat"],h:["atk"]},
+    "중운":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "시틀라리":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["atk"]},
+    "클로린드":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["em"]},
+    "콜레이":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:[]},
+    "콜롬비나":{v:["cr","cd","er","hp_pct","hp_flat"],h:[]},
+    "사이노":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["atk"]},
+    "달리아":{v:["er","hp_pct","hp_flat"],h:[]},
+    "데히야":{v:["cr","cd","em","er","atk_pct","atk_flat","hp_pct","hp_flat"],h:[]},
+    "다이루크":{v:["cr","cd","em","atk_pct","atk_flat"],h:["em"]},
+    "디오나":{v:["er","hp_pct","hp_flat"],h:[]},
+    "도리":{v:["cr","cd","er","atk_pct","atk_flat","hp_pct","hp_flat"],h:[]},
+    "두린":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "에밀리":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "에스코피에":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "유라":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "파루잔":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "피슬":{v:["cr","cd","em","atk_pct","atk_flat"],h:[]},
+    "플린스":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["em"]},
+    "프레미네":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "푸리나":{v:["cr","cd","er","hp_pct","hp_flat"],h:[]},
+    "가명":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:[]},
+    "감우":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:[]},
+    "고로":{v:["er","def_pct","def_flat"],h:[]},
+    "호두":{v:["cr","cd","em","er","atk_pct","atk_flat","hp_pct","hp_flat"],h:["atk"]},
+    "얀사":{v:["er","atk_pct","atk_flat"],h:[]},
+    "이파":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["em"]},
+    "일루가":{v:["cr","em","er"],h:[]},
+    "이네파":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:[]},
+    "야호다":{v:["er","atk_pct","atk_flat"],h:[]},
+    "진":{v:["cr","er","atk_pct","atk_flat"],h:[]},
+    "카치나":{v:["cr","cd","er","def_pct","def_flat"],h:[]},
+    "카에데하라 카즈하":{v:["em","er","atk_pct","atk_flat"],h:["atk"]},
+    "케이아":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "카미사토 아야카":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "카미사토 아야토":{v:["cr","cd","em","er","atk_pct","atk_flat","hp_pct","hp_flat"],h:["hp","em"]},
+    "카베":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:[]},
+    "각청":{v:["cr","cd","em","atk_pct","atk_flat"],h:["em"]},
+    "키니치":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "키라라":{v:["em","er","hp_pct","hp_flat"],h:[]},
+    "클레":{v:["cr","cd","em","atk_pct","atk_flat"],h:["em"]},
+    "쿠죠 사라":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "쿠키 시노부":{v:["em","er","hp_pct","hp_flat"],h:[]},
+    "남연":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["em"]},
+    "라우마":{v:["em","er"],h:[]},
+    "레일라":{v:["er","hp_pct","hp_flat"],h:[]},
+    "린네아":{v:["cr","cd","em","er","def_pct","def_flat"],h:[]},
+    "리사":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:[]},
+    "로엔":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "리넷":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "리니":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "마비카":{v:["cr","cd","em","atk_pct","atk_flat"],h:[]},
+    "미카":{v:["er","hp_pct","hp_flat"],h:[]},
+    "모나":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "말라니":{v:["cr","cd","em","er","hp_pct","hp_flat"],h:[]},
+    "나히다":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["atk"]},
+    "나비아":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "네페르":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["atk"]},
+    "느비예트":{v:["cr","cd","er","hp_pct","hp_flat"],h:[]},
+    "니콜":{v:["er","atk_pct","atk_flat"],h:[]},
+    "닐루":{v:["em","er","hp_pct","hp_flat"],h:["em"]},
+    "응광":{v:["cr","cd","atk_pct","atk_flat"],h:[]},
+    "노엘":{v:["cr","cd","atk_pct","atk_flat","def_pct","def_flat"],h:["atk"]},
+    "오데트":{v:["cr","cd","em","atk_pct","atk_flat"],h:[]},
+    "올로룬":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["em"]},
+    "프루네":{v:["er","atk_pct","atk_flat"],h:[]},
+    "치치":{v:["er","atk_pct","atk_flat"],h:[]},
+    "라이덴 쇼군":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "레이저":{v:["cr","cd","em","atk_pct","atk_flat"],h:[]},
+    "로자리아":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:[]},
+    "산드로네":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:[]},
+    "산고노미야 코코미":{v:["em","er","atk_pct","atk_flat","hp_pct","hp_flat"],h:["atk","em"]},
+    "사유":{v:["cr","em","er","atk_pct","atk_flat"],h:[]},
+    "세토스":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:[]},
+    "신학":{v:["er","atk_pct","atk_flat"],h:[]},
+    "시카노인 헤이조":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "시그윈":{v:["er","hp_pct","hp_flat"],h:[]},
+    "스커크":{v:["cr","cd","atk_pct","atk_flat"],h:[]},
+    "설탕":{v:["em","er"],h:[]},
+    "타르탈리아":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["em"]},
+    "토마":{v:["em","er","hp_pct","hp_flat"],h:[]},
+    "타이나리":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["atk"]},
+    "바레사":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "바르카":{v:["cr","cd","atk_pct","atk_flat"],h:[]},
+    "벤티":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:[]},
+    "방랑자":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "라이오슬리":{v:["cr","cd","em","atk_pct","atk_flat"],h:["em"]},
+    "향릉":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:[]},
+    "한운":{v:["er","atk_pct","atk_flat"],h:[]},
+    "소":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "실로닌":{v:["er","def_pct","def_flat"],h:[]},
+    "행추":{v:["cr","cd","er","atk_pct","atk_flat"],h:[]},
+    "신염":{v:["cr","cd","er","atk_pct","atk_flat","def_pct","def_flat"],h:[]},
+    "야에 미코":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["em"]},
+    "연비":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["em"]},
+    "요요":{v:["em","er","hp_pct","hp_flat"],h:[]},
+    "야란":{v:["cr","cd","er","hp_pct","hp_flat"],h:[]},
+    "요이미야":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:["em"]},
+    "유메미즈키 미즈키":{v:["em","er","atk_pct","atk_flat"],h:["atk"]},
+    "운근":{v:["er","def_pct","def_flat"],h:[]},
+    "종려":{v:["cr","cd","er","atk_pct","atk_flat","hp_pct","hp_flat"],h:[]},
+    "자백":{v:["cr","cd","er","def_pct","def_flat"],h:[]},
+    "베스나":{v:["cr","cd","em","er","atk_pct","atk_flat"],h:[]},
+    "보댜니차":{v:["er","hp_pct","hp_flat"],h:[]}
+  };
+  // END CHAR_BUILDS
+  // BEGIN CHAR_TABLE - the memo, generated from 성유물 점수 유효옵션 캐릭터표.md
+  var CHAR_TABLE = [{"title": "공격력%, 공격력", "groups": [["다이루크", "클레", "요이미야", "데히야", "리니", "아를레키노", "마비카", "두린", "니콜"], ["엠버", "향릉", "신염", "연비", "가명"], ["모나", "타르탈리아", "카미사토 아야토", "행추"], ["진", "벤티", "소", "방랑자", "한운", "차스카", "사유", "시카노인 헤이조", "파루잔", "리넷", "남연", "이파", "야호다", "바르카", "프루네"], ["각청", "라이덴 쇼군", "야에 미코", "클로린드", "바레사", "이네파", "플린스", "리사", "레이저", "북두", "피슬", "쿠죠 사라", "도리", "세토스", "올로룬", "얀사"], ["에밀리", "키니치", "콜레이", "카베"], ["치치", "감우", "유라", "카미사토 아야카", "신학", "라이오슬리", "케이아", "중운", "로자리아", "프레미네", "샤를로트", "에일로이", "에스코피에", "스커크", "로엔"], ["종려", "나비아", "응광"], ["산드로네", "알료샤", "오데트", "베스나"]], "notes": []}, {"title": "공격력%, 공격력 (유효하나 효율 떨어짐 / ×0.5 보정)", "groups": [["나히다", "타이나리", "알하이탐", "사이노", "산고노미야 코코미", "노엘", "알베도", "아라타키 이토", "치오리", "호두", "카에데하라 카즈하", "시틀라리", "유메미즈키 미즈키", "네페르"]], "notes": []}, {"title": "방어력%, 방어력", "groups": [["신염"], ["알베도", "아라타키 이토", "치오리", "실로닌", "노엘", "운근", "고로", "카치나", "자백", "린네아"]], "notes": []}, {"title": "HP%, HP", "groups": [["호두", "데히야", "토마", "슈브르즈", "베넷"], ["산고노미야 코코미", "야란", "닐루", "느비예트", "푸리나", "시그윈", "말라니", "콜롬비나", "바바라", "캔디스", "달리아"], ["쿠키 시노부", "도리"], ["백출", "요요", "키라라"], ["디오나", "레일라", "미카"], ["종려", "보댜니차"]], "notes": []}, {"title": "HP%, HP (유효하나 효율 떨어짐 / ×0.5 보정)", "groups": [["카미사토 아야토"]], "notes": []}, {"title": "치명타확률", "groups": [["다이루크", "클레", "호두", "요이미야", "데히야", "리니", "아를레키노", "마비카", "두린"], ["모나", "타르탈리아", "카미사토 아야토", "야란", "느비예트", "푸리나", "말라니", "콜롬비나"], ["닐루(6돌)", "시그윈(4돌이상)"], ["진", "벤티", "소", "방랑자", "차스카", "바르카"], ["카에데하라 카즈하(6돌)", "한운(6돌)"], ["각청", "라이덴 쇼군", "야에 미코", "사이노", "클로린드", "바레사", "이네파", "플린스"], ["타이나리", "나히다", "알하이탐", "에밀리", "키니치", "라우마(6돌)", "네페르"], ["감우", "유라", "카미사토 아야카", "라이오슬리", "시틀라리", "에스코피에", "스커크"], ["종려", "알베도", "아라타키 이토", "나비아", "치오리"], ["엠버", "향릉", "신염", "연비", "가명"], ["행추", "캔디스", "아이노"], ["사유", "시카노인 헤이조", "파루잔", "리넷", "남연", "이파"], ["리사", "레이저", "북두", "피슬", "쿠죠 사라", "도리", "세토스", "올로룬"], ["콜레이", "카베"], ["케이아", "중운", "로자리아", "프레미네", "에일로이", "로엔"], ["실로닌(6돌)", "응광", "노엘", "카치나", "자백", "일루가", "린네아"], ["산드로네", "알료샤", "오데트", "베스나"]], "notes": []}, {"title": "치명타피해", "groups": [["다이루크", "클레", "호두", "요이미야", "데히야", "리니", "아를레키노", "마비카", "두린"], ["모나", "타르탈리아", "카미사토 아야토", "야란", "느비예트", "푸리나", "말라니", "콜롬비나"], ["닐루(6돌)", "시그윈(4돌이상)"], ["벤티", "소", "방랑자", "차스카", "바르카"], ["카에데하라 카즈하(6돌)", "한운(6돌)"], ["각청", "라이덴 쇼군", "야에 미코", "사이노", "클로린드", "바레사", "이네파", "플린스"], ["타이나리", "나히다", "알하이탐", "에밀리", "키니치", "라우마(6돌)", "네페르"], ["감우", "유라", "카미사토 아야카", "라이오슬리", "시틀라리", "에스코피에", "스커크"], ["종려", "알베도", "아라타키 이토", "나비아", "치오리"], ["엠버", "향릉", "신염", "연비", "가명"], ["행추", "아이노"], ["시카노인 헤이조", "파루잔", "리넷", "남연", "이파"], ["리사", "레이저", "북두", "피슬", "쿠죠 사라", "도리", "세토스", "올로룬"], ["콜레이", "카베"], ["케이아", "중운", "로자리아", "프레미네", "에일로이", "로엔"], ["실로닌(6돌)", "응광", "노엘", "카치나", "자백", "린네아"], ["산드로네", "오데트", "베스나"]], "notes": []}, {"title": "원소충전효율", "groups": [["호두", "요이미야", "데히야", "리니", "아를레키노", "두린", "니콜"], ["향릉", "베넷", "신염", "연비", "토마", "슈브르즈", "가명", "엠버"], ["모나", "타르탈리아", "산고노미야 코코미", "카미사토 아야토", "야란", "닐루", "느비예트", "푸리나", "시그윈", "말라니", "콜롬비나", "행추", "캔디스", "바바라", "달리아", "아이노"], ["진", "벤티", "소", "카에데하라 카즈하", "방랑자", "한운", "차스카", "유메미즈키 미즈키", "프루네"], ["설탕", "사유", "시카노인 헤이조", "파루잔", "리넷", "남연", "이파", "야호다"], ["라이덴 쇼군", "야에 미코", "사이노", "클로린드", "바레사", "이네파", "플린스"], ["리사", "북두", "쿠죠 사라", "도리", "세토스", "쿠키 시노부", "올로룬", "얀사"], ["타이나리", "나히다", "알하이탐", "백출", "에밀리", "키니치", "라우마", "네페르"], ["콜레이", "요요", "카베", "키라라"], ["치치", "감우", "유라", "카미사토 아야카", "신학", "시틀라리"], ["케이아", "중운", "디오나", "로자리아", "레일라", "미카", "프레미네", "샤를로트", "에일로이", "에스코피에", "로엔"], ["종려", "알베도", "아라타키 이토", "나비아", "실로닌"], ["고로", "운근", "카치나", "자백", "일루가", "린네아"], ["산드로네", "알료샤", "오데트(4돌이상)", "베스나", "보댜니차"]], "notes": ["※ 캐릭터의 원소충전효율이 130% 이상 필요한 경우 유효옵션으로 간주합니다."]}, {"title": "원소마스터리", "groups": [["호두", "데히야", "마비카", "향릉", "가명", "토마", "엠버"], ["말라니", "아이노"], ["카에데하라 카즈하", "벤티", "유메미즈키 미즈키", "설탕", "사유"], ["사이노", "이네파", "리사", "피슬", "레이저", "쿠키 시노부", "세토스"], ["타이나리", "나히다", "알하이탐", "라우마", "네페르", "콜레이", "요요", "카베", "키라라"], ["감우", "시틀라리", "로자리아"], ["일루가", "린네아"], ["산드로네", "오데트", "베스나"]], "notes": []}, {"title": "원소마스터리 보정 (유효하나 효율 떨어짐 / ×0.5 보정)", "groups": [["아를레키노", "다이루크", "요이미야", "연비", "클레"], ["야에 미코", "각청", "클로린드", "플린스", "올로룬"], ["카미사토 아야토", "타르탈리아", "산고노미야 코코미", "닐루"], ["라이오슬리", "에일로이"], ["차스카", "남연", "이파"]], "notes": []}];
+  // END CHAR_TABLE
+
+  var SCORE_TIERS = [
+    {min:0,  max:10,  r:"t0", label:"5성 성유물이 맞으신가요?"},
+    {min:10, max:30,  r:"t1", label:"강화재료로 쓰세요."},
+    {min:30, max:50,  r:"t2", label:"임시로 착용하세요."},
+    {min:50, max:70,  r:"t3", label:"준종결급"},
+    {min:70, max:90,  r:"t4", label:"종결급"},
+    {min:90, max:1e9, r:"t5", label:"비틱하지 마세요."}
+  ];
+
+  function round(n,d){ var f=Math.pow(10,d); return Math.round((n+Number.EPSILON)*f)/f; }
+
+  var currentSlot = null;
+
+  // ---------- character datalist ----------
+  var charList = document.getElementById("charList");
+  CHARACTERS.forEach(function(c){
+    var opt = document.createElement("option");
+    opt.value = c.ko === c.en ? c.en : c.ko;
+    charList.appendChild(opt);
+  });
+
+  var charSearch = document.getElementById("charSearch");
+  var charConfirm = document.getElementById("charConfirm");
+  var currentBase = {hp:0, atk:0, def:0};
+
+  function findChar(name){
+    var n = (name||"").trim();
+    if (!n) return null;
+    return CHARACTERS.filter(function(c){ return c.ko===n || c.en===n; })[0] || null;
+  }
+
+  // Picking a character checks that character's valid stats and x0.5 corrections
+  // (see CHAR_BUILDS); the user can still change them by hand afterwards.
+  function applyBuild(name){
+    var b = CHAR_BUILDS[name];
+    if (!b) return;
+    validKeys = {};
+    b.v.forEach(function(k){ validKeys[k] = true; });
+    CORR_GROUPS.forEach(function(g){
+      document.querySelector('[data-corr="'+g.key+'"]').checked = b.h.indexOf(g.key) !== -1;
+    });
+    syncValidBoxes();
+  }
+
+  function applyChar(c){
+    if (!c) return;
+    currentBase = {hp:c.hp, atk:c.atk, def:c.def};
+    charConfirm.className = "char-confirm";
+    charConfirm.textContent = "";
+    applyBuild(c.ko);
+    recalc();
+  }
+
+  charSearch.addEventListener("input", function(){
+    var c = findChar(charSearch.value);
+    if (c){ applyChar(c); }
+    else {
+      currentBase = {hp:0, atk:0, def:0};
+      charConfirm.className = "char-confirm unmatched";
+      charConfirm.textContent = charSearch.value ? "일치하는 캐릭터 없음" : "";
+      recalc();
+    }
+  });
+
+  // ---------- slot picker ----------
+  var slotPicker = document.getElementById("slotPicker");
+  SLOTS.forEach(function(s){
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "slot-btn" + (s.key===currentSlot ? " active" : "");
+    btn.id = "slotbtn-"+s.key;
+    btn.innerHTML = s.label;
+    btn.addEventListener("click", function(){
+      var had = !!currentSlot;
+      setSlot(s.key);
+      if (mode !== "locked") return;
+      recalc();                                   // the score follows the slot right away
+      if (!had){                                  // the slot was the only thing missing
+        setPhotoStatus(CHECK_MSG, false);
+        revealResult();
+      }
+    });
+    slotPicker.appendChild(btn);
+  });
+
+  // Which stats count as valid for this character. Kept across artifacts on
+  // purpose (the same stats stay valid for the next artifact); reset only by reload.
+  var validKeys = {};
+
+  // "idle"   nothing entered yet
+  // "edit"   the substat fields (and slot) can be changed; the score is hidden
+  // "locked" fields are read-only and the score is showing
+  var mode = "idle";
+
+  // ---------- correction list ----------
+  var corrList = document.getElementById("corrList");
+  CORR_GROUPS.forEach(function(g){
+    var row = document.createElement("div");
+    row.className = "corr-row";
+    row.innerHTML =
+      '<label class="check"><input type="checkbox" class="cbx" data-corr="'+g.key+'"> '+g.label+'</label>';
+    corrList.appendChild(row);
+  });
+
+  // ---------- substat rows ----------
+  var subRows = document.getElementById("subRows");
+  var typeOpts = '<option value="">선택 안함</option>' + STAT_TYPES.map(function(s){ return '<option value="'+s.key+'">'+s.label+'</option>'; }).join("");
+  for (var i=0;i<4;i++){
+    var row = document.createElement("div");
+    row.className = "substat-row";
+    row.innerHTML =
+      '<label class="valid-check"><input type="checkbox" class="cbx" id="subvalid-'+i+'" aria-label="유효 옵션" title="유효 옵션" disabled></label>'+
+      '<select id="subtype-'+i+'" disabled>'+typeOpts+'</select>'+
+      '<input type="number" step="0.1" min="0" inputmode="decimal" id="subval-'+i+'" placeholder="0.0" disabled>';
+    subRows.appendChild(row);
+  }
+
+  var subEditor = document.getElementById("subEditor");
+  var editBtn = document.getElementById("editBtn");
+  var applyBtn = document.getElementById("applyBtn");
+  var manualBtn = document.getElementById("manualBtn");
+  var corrCard = document.getElementById("corrCard");
+
+  function setSlot(key){
+    currentSlot = key || null;
+    SLOTS.forEach(function(o){ document.getElementById("slotbtn-"+o.key).classList.toggle("active", o.key===currentSlot); });
+  }
+
+  // The valid-checkbox of a row follows its stat (validKeys is per stat, not per row).
+  function syncValidBoxes(){
+    for (var i=0;i<4;i++){
+      var type = document.getElementById("subtype-"+i).value;
+      var cb = document.getElementById("subvalid-"+i);
+      cb.checked = !!(type && validKeys[type]);
+      cb.disabled = !type || mode !== "edit";
+    }
+  }
+
+  function setMode(m){
+    mode = m;
+    var editing = (m === "edit");
+    subEditor.hidden = (m === "idle");
+    corrCard.hidden = !editing;
+    for (var i=0;i<4;i++){
+      document.getElementById("subtype-"+i).disabled = !editing;
+      document.getElementById("subval-"+i).disabled = !editing;
+    }
+    editBtn.hidden = (m !== "locked");
+    applyBtn.hidden = !editing;
+    syncValidBoxes();
+    recalc();
+  }
+
+  function clearInputs(keepSlot){
+    for (var i=0;i<4;i++){
+      document.getElementById("subtype-"+i).value = "";
+      document.getElementById("subval-"+i).value = "";
+    }
+    if (!keepSlot) setSlot(null);
+    setPhotoStatus("", false);
+    setPhotoPreview(null);
+  }
+
+  // Once the score appears, bring it into view (it is the last card on the page).
+  function revealResult(){
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.getElementById("resultCard").scrollIntoView({behavior: reduce ? "auto" : "smooth", block: "end"});
+  }
+
+  // ---------- recalc ----------
+  // Until the substats are applied the score card stays untouched: no number, no
+  // gauge, no colour, no grade label.
+  function renderNeutral(keepStats){
+    if (!keepStats){
+      document.getElementById("efficiency").textContent = "0.0";
+      document.getElementById("critCount").textContent = "0.00";
+    }
+    var scoreEl = document.getElementById("score100");
+    scoreEl.textContent = "0.0";
+    scoreEl.style.color = "";
+    var gaugeFill = document.getElementById("gaugeFill");
+    gaugeFill.style.width = "0%";
+    gaugeFill.style.removeProperty("--fill");
+    document.getElementById("gradePill").hidden = true;
+    document.getElementById("gradeLabel").textContent = "";
+  }
+
+  function recalc(){
+    var slot = SLOTS.filter(function(s){ return s.key===currentSlot; })[0];
+    if (mode !== "locked" || !slot){ renderNeutral(); return; }
+
+    var corr = {};
+    CORR_GROUPS.forEach(function(g){ corr[g.key] = document.querySelector('[data-corr="'+g.key+'"]').checked; });
+
+    var bases = currentBase;
+
+    var efficiencySum = 0, critSum = 0, validSum = 0, anyValid = false;
+
+    for (var i=0;i<4;i++){
+      var type = document.getElementById("subtype-"+i).value;
+      var raw = parseFloat(document.getElementById("subval-"+i).value);
+      if (!type || isNaN(raw) || raw <= 0) continue;
+      var def = STAT_MAP[type];
+
+      var rawRatio = raw/def.avg;
+      efficiencySum += rawRatio;
+      if (type==="cr" || type==="cd") critSum += rawRatio;
+
+      if (!validKeys[type]) continue;
+      anyValid = true;
+
+      var score;
+      if (def.kind === "pct"){
+        score = raw/def.avg;
+      } else {
+        var base = bases[def.base];
+        score = base > 0 ? ((raw/def.avg)/base*100)/ (def.base==="atk"||def.base==="hp" ? 4.975 : 6.2) : 0;
+      }
+      if (def.corr && corr[def.corr]) score *= 0.5;
+      validSum += score;
+    }
+
+    document.getElementById("efficiency").textContent = round(efficiencySum*10,1).toFixed(1);
+    document.getElementById("critCount").textContent = round(critSum,2).toFixed(2);
+
+    if (!anyValid){ renderNeutral(true); return; }
+
+    var sumScore = validSum*10;
+    var final100 = sumScore/slot.denom*100;
+    document.getElementById("score100").textContent = round(final100,1).toFixed(1);
+    var gaugeFill = document.getElementById("gaugeFill");
+    gaugeFill.style.width = Math.max(0, Math.min(100, final100)) + "%";
+
+    var scoreEl = document.getElementById("score100");
+    var gradePill = document.getElementById("gradePill");
+    var tier = SCORE_TIERS.filter(function(t){ return final100>=t.min && final100<t.max; })[0] || SCORE_TIERS[SCORE_TIERS.length-1];
+    var label = tier.label;
+    var tierColor = "var(--"+tier.r+")";
+    scoreEl.style.color = tierColor;
+    gaugeFill.style.setProperty("--fill", tierColor);
+    gradePill.hidden = false;
+    gradePill.style.color = tierColor;
+    gradePill.style.background = "color-mix(in srgb, "+tierColor+" 16%, transparent)";
+    document.getElementById("gradeLabel").textContent = label;
+  }
+
+  document.addEventListener("change", function(e){
+    var t = e.target;
+    if (t.matches('[data-corr]')){
+      recalc();
+    } else if (t.id && t.id.indexOf("subvalid-") === 0){
+      var type = document.getElementById("subtype-" + t.id.slice("subvalid-".length)).value;
+      if (type) validKeys[type] = t.checked;
+      syncValidBoxes();   // the same stat can never sit in two rows, but keep the boxes in step
+      recalc();
+    } else if (t.id && t.id.indexOf("subtype-") === 0){
+      syncValidBoxes();
+    }
+  });
+
+  editBtn.addEventListener("click", function(){
+    setPhotoStatus("", false);
+    setMode("edit");
+  });
+
+  applyBtn.addEventListener("click", function(){
+    var seen = {}, count = 0, dup = false, incomplete = false;
+    for (var i=0;i<4;i++){
+      var type = document.getElementById("subtype-"+i).value;
+      var raw = parseFloat(document.getElementById("subval-"+i).value);
+      if (!type) continue;
+      if (seen[type]) dup = true;
+      seen[type] = true;
+      if (isNaN(raw) || raw <= 0) incomplete = true; else count++;
+    }
+    var problem = !currentSlot ? "착용 부위를 선택해주세요"
+      : !count ? "부옵션을 입력해주세요"
+      : incomplete ? "수치가 빈 부옵션이 있어요"
+      : dup ? "같은 부옵션이 두 번 들어갔어요" : "";
+    if (problem){ setPhotoStatus(problem, true); return; }
+    setPhotoStatus("", false);
+    setMode("locked");
+    revealResult();
+  });
+
+  manualBtn.addEventListener("click", function(){
+    clearInputs(true);
+    setMode("edit");
+  });
+
+  document.getElementById("resetBtn").addEventListener("click", function(){
+    clearInputs();
+    setMode("idle");
+  });
+
+  // ---------- photo upload (Tesseract.js, runs fully in the browser) ----------
+  var photoInput = document.getElementById("photoInput");
+  var photoStatus = document.getElementById("photoStatus");
+  var photoViewBtn = document.getElementById("photoViewBtn");
+  var photoModal = document.getElementById("photoModal");
+  var photoModalImg = document.getElementById("photoModalImg");
+  var CHECK_MSG = "부옵션 스탯이 잘못되었을 경우 직접 수정 해 주세요.";
+  var photoBtnLabel = document.getElementById("photoBtnLabel");
+  // A mouse-and-keyboard machine can drop / paste pictures; a touch screen just taps.
+  var FINE_POINTER = !!(window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches);
+  var PASTE_KEY = /Mac|iPhone|iPad/i.test(navigator.platform || "") ? "⌘V" : "Ctrl+V";
+  var PHOTO_LABEL = FINE_POINTER ? "사진을 여기에 끌어다 놓거나 " + PASTE_KEY + "로 붙여넣기" : "눌러서 사진 선택";
+  var photoBtnSub = document.getElementById("photoBtnSub");
+  function showPhotoSub(){ photoBtnSub.textContent = "또는 이곳을 눌러 사진 선택"; photoBtnSub.hidden = !FINE_POINTER; }
+  photoBtnLabel.textContent = PHOTO_LABEL;
+  showPhotoSub();
+
+  // Canvas preprocessing: upscale, then adaptive-threshold to clean black text on
+  // white. Game screenshots are light text over dark, textured artwork, so a
+  // per-pixel comparison against the local average (integral image) works far
+  // better than one global threshold.
+  var BIN_PAD = 24; // white margin binarizeImage adds around the picture (px)
+  function binarizeImage(file, opts){
+    opts = opts || {};
+    return createImageBitmap(file).then(function(bmp){
+      var cr = opts.crop || {x: 0, y: 0, w: 1, h: 1};
+      var sx = Math.round(bmp.width * cr.x), sy = Math.round(bmp.height * cr.y);
+      var sw = Math.round(bmp.width * cr.w), sh = Math.round(bmp.height * cr.h);
+      var scale = opts.scale || (sw < 900 ? 2 : (sw < 1600 ? 1.5 : 1));
+      // very large photos (12MP+ phone shots) would need hundreds of MB here: shrink them
+      var MAX_PIXELS = 4e6;
+      if (sw * sh * scale * scale > MAX_PIXELS) scale = Math.sqrt(MAX_PIXELS / (sw * sh));
+      var w = Math.round(sw * scale), h = Math.round(sh * scale);
+      var c = document.createElement("canvas");
+      c.width = w; c.height = h;
+      var ctx = c.getContext("2d", {willReadFrequently: true});
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(bmp, sx, sy, sw, sh, 0, 0, w, h);
+      var img = ctx.getImageData(0, 0, w, h), d = img.data;
+
+      var gray = new Float32Array(w * h), sum = 0, i, x, y;
+      for (i = 0; i < w * h; i++){
+        gray[i] = 0.299 * d[i*4] + 0.587 * d[i*4+1] + 0.114 * d[i*4+2];
+        sum += gray[i];
+      }
+      var globalMean = sum / (w * h);
+      var lightOnDark = globalMean < 140;
+      // text must also clear an absolute brightness floor, otherwise textured
+      // artwork behind the text shows up as speckle
+      var floorK = (opts.floorK !== undefined) ? opts.floorK : 0.35;
+      var lightFloor = globalMean + floorK * (255 - globalMean);
+      var darkFloor = globalMean - floorK * globalMean;
+
+      var W = w + 1, integral = new Float64Array(W * (h + 1));
+      for (y = 0; y < h; y++){
+        var row = 0;
+        for (x = 0; x < w; x++){
+          row += gray[y * w + x];
+          integral[(y+1) * W + (x+1)] = integral[y * W + (x+1)] + row;
+        }
+      }
+      var r = Math.max(12, Math.round(w / 40)), C = (opts.C !== undefined) ? opts.C : 14;
+      for (y = 0; y < h; y++){
+        var y0 = Math.max(0, y - r), y1 = Math.min(h, y + r + 1);
+        for (x = 0; x < w; x++){
+          var x0 = Math.max(0, x - r), x1 = Math.min(w, x + r + 1);
+          var area = (x1 - x0) * (y1 - y0);
+          var mean = (integral[y1*W + x1] - integral[y0*W + x1] - integral[y1*W + x0] + integral[y0*W + x0]) / area;
+          var g = gray[y * w + x];
+          var lightText = g > mean + C && g > lightFloor, darkText = g < mean - C && g < darkFloor;
+          var isText = (lightOnDark !== !!opts.invert) ? lightText : darkText;
+          var v = isText ? 0 : 255, p = (y * w + x) * 4;
+          d[p] = d[p+1] = d[p+2] = v; d[p+3] = 255;
+        }
+      }
+      // Written out as an uncompressed 8-bit BMP with a white margin: encoding a PNG
+      // of this size costs about a second, the BMP is instant and Tesseract reads it.
+      var pad = BIN_PAD, ow = w + pad * 2, oh = h + pad * 2;
+      var rowBytes = (ow + 3) & ~3, dataOff = 14 + 40 + 1024;
+      var bmpBytes = new Uint8Array(dataOff + rowBytes * oh).fill(255);
+      var dv = new DataView(bmpBytes.buffer);
+      bmpBytes[0] = 0x42; bmpBytes[1] = 0x4D;
+      dv.setUint32(2, bmpBytes.length, true); dv.setUint32(10, dataOff, true);
+      dv.setUint32(14, 40, true); dv.setInt32(18, ow, true); dv.setInt32(22, oh, true);
+      dv.setUint16(26, 1, true); dv.setUint16(28, 8, true);
+      dv.setUint32(34, rowBytes * oh, true); dv.setUint32(46, 256, true);
+      for (i = 0; i < 256; i++){ var pal = 54 + i * 4; bmpBytes[pal] = bmpBytes[pal+1] = bmpBytes[pal+2] = i; bmpBytes[pal+3] = 0; }
+      for (y = 0; y < h; y++){                       // BMP rows run bottom to top
+        var dst = dataOff + (oh - 1 - (y + pad)) * rowBytes + pad;
+        for (x = 0; x < w; x++) bmpBytes[dst + x] = d[(y * w + x) * 4];
+      }
+      var outBlob = new Blob([bmpBytes], {type: "image/bmp"});
+      outBlob.usedScale = scale;   // the scale may have been reduced above
+      return Promise.resolve(outBlob);
+    });
+  }
+
+  var ocrWorkerPromise = null;
+  function getOcrWorker(){
+    if (ocrWorkerPromise) return ocrWorkerPromise;
+    ocrWorkerPromise = Tesseract.createWorker("kor+eng", 1, {
+      workerPath: "tess/worker.min.js",
+      corePath: "tess",
+      langPath: "tess"
+    }).then(function(worker){
+      // layout: one block of text lines; keep the spaces Tesseract sees between words
+      return worker.setParameters({
+        tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
+        preserve_interword_spaces: "1",
+        user_defined_dpi: "300"
+      }).then(function(){ return worker; });
+    });
+    ocrWorkerPromise.catch(function(){ ocrWorkerPromise = null; });
+    return ocrWorkerPromise;
+  }
+
+  // A failed run can leave the worker in a broken state, so start fresh next time.
+  function resetOcrWorker(){
+    var p = ocrWorkerPromise;
+    ocrWorkerPromise = null;
+    if (p) p.then(function(w){ return w.terminate(); }).catch(function(){});
+  }
+
+  // A full-screen capture (wide) shows the artifact detail panel on the right
+  // half of the screen, but how tall it is varies. So the right half is scanned
+  // first (sparse text, with word positions) to find the substat rows, and the
+  // panel is cropped around them before the real reading. Cropped card photos
+  // are narrower than 3:2 and are read whole.
+  var FULLSCREEN_MIN_RATIO = 1.5;
+  var RIGHT_HALF = {x: 0.5, y: 0, w: 0.5, h: 1};
+  var STAT_LINE = /치명타|공격력|방어력|HP|체력|마스터리|충전\s*효/;
+
+  // lines: Tesseract lines (with bbox) read from the `region` of the picture at
+  // `scale`. Returns the crop (fractions of the whole picture) around the
+  // substat rows, or null when no such rows were found.
+  function locateCard(lines, region, scale, W, H, pad){
+    var rows = [];
+    lines.forEach(function(ln){
+      var t = ln.text || "";
+      if (!/[+＋]\s*\d/.test(t) || !STAT_LINE.test(t) || /세트/.test(t) || !ln.bbox) return;
+      rows.push({
+        x0: region.x * W + (ln.bbox.x0 - pad) / scale,
+        y0: region.y * H + (ln.bbox.y0 - pad) / scale,
+        y1: region.y * H + (ln.bbox.y1 - pad) / scale
+      });
+    });
+    if (!rows.length) return null;
+    rows.sort(function(a, b){ return a.y0 - b.y0; });
+    // substat rows sit one line apart; anything further down (set bonus text) is another group
+    var groups = [[rows[0]]];
+    for (var i = 1; i < rows.length; i++){
+      if (rows[i].y0 - rows[i-1].y0 > 0.055 * H) groups.push([]);
+      groups[groups.length - 1].push(rows[i]);
+    }
+    var best = groups.reduce(function(a, g){ return g.length > a.length ? g : a; });
+    var minX = Math.min.apply(null, best.map(function(r){ return r.x0; }));
+    var top = best[0].y0;
+    // The scan often misses rows (highlighted stripes behind every other row are hard for
+    // it), so the bottom is not simply the last row found: the panel holds up to four
+    // substat rows, spaced one pitch apart, and the crop reaches down to where the fourth
+    // would be.
+    var pitch = 0.032 * H;
+    if (best.length > 1){
+      var gaps = [];
+      for (var g = 1; g < best.length; g++) gaps.push(best[g].y0 - best[g-1].y0);
+      gaps.sort(function(a, b){ return a - b; });
+      pitch = Math.min(0.045 * H, Math.max(0.025 * H, gaps[Math.floor(gaps.length / 2)]));
+    }
+    var bottom = Math.max(best[best.length - 1].y1 + 0.02 * H, top + 4 * pitch);
+    var left = Math.max(0, minX - 0.03 * W);
+    var cropTop = Math.max(0, top - 0.40 * H);   // room above for slot name + main stat (even if the top row was missed)
+    var cropBottom = Math.min(H, bottom);
+    return {x: left / W, y: cropTop / H, w: (W - left) / W, h: (cropBottom - cropTop) / H};
+  }
+
+  function isComplete(d){ return d.substats.length >= 4 && !!d.slot; }
+
+  // Plain crop + upscale, no thresholding, as a PNG blob. Tesseract's own thresholding
+  // copes better with light or low-resolution panels; binarizeImage copes better with
+  // dark, busy ones - so both are used, one after the other.
+  function cropImage(file, crop, scale){
+    return createImageBitmap(file).then(function(bmp){
+      var sx = Math.round(bmp.width * crop.x), sy = Math.round(bmp.height * crop.y);
+      var sw = Math.round(bmp.width * crop.w), sh = Math.round(bmp.height * crop.h);
+      if (sw * sh * scale * scale > 4e6) scale = Math.sqrt(4e6 / (sw * sh));
+      var c = document.createElement("canvas");
+      c.width = Math.round(sw * scale); c.height = Math.round(sh * scale);
+      var g = c.getContext("2d");
+      g.imageSmoothingQuality = "high";
+      g.drawImage(bmp, sx, sy, sw, sh, 0, 0, c.width, c.height);
+      return new Promise(function(resolve){
+        c.toBlob(function(blob){ blob.usedScale = scale; resolve(blob); }, "image/png");
+      });
+    });
+  }
+
+  var WHOLE = {x: 0, y: 0, w: 1, h: 1};
+
+  // ---------- OCR.space (optional cloud engine, tried first when a key is set) ----------
+  // Free key: https://ocr.space/ocrapi/freekey (email only, no card, ~25,000 reads/month).
+  // Paste it below to let photos try the cloud engine before the local one; leave empty
+  // (default) and nothing changes - only the free in-browser engine runs, same as before.
+  // The key ends up readable in this page's source, since there is no server to hide it
+  // behind; the free tier has no billing attached, so the worst case is the monthly quota
+  // running out, not a bill. When OCR.space errors, times out, or can't read everything,
+  // this quietly falls back to the local engine below - nothing is shown to the user.
+  var OCR_SPACE_KEY = "K86638267588957";
+
+  // A small, size-capped JPEG for the free tier's ~1MB upload limit.
+  function ocrSpaceImage(file, crop){
+    function make(maxSide, quality){
+      return createImageBitmap(file).then(function(bmp){
+        var c2 = crop || WHOLE;
+        var sx = Math.round(bmp.width * c2.x), sy = Math.round(bmp.height * c2.y);
+        var sw = Math.round(bmp.width * c2.w), sh = Math.round(bmp.height * c2.h);
+        var scale = Math.min(1, maxSide / Math.max(sw, sh));
+        var c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(sw * scale)); c.height = Math.max(1, Math.round(sh * scale));
+        var g = c.getContext("2d");
+        g.imageSmoothingQuality = "high";
+        g.drawImage(bmp, sx, sy, sw, sh, 0, 0, c.width, c.height);
+        if (bmp.close) bmp.close();
+        return new Promise(function(resolve){ c.toBlob(resolve, "image/jpeg", quality); });
+      });
+    }
+    return make(1400, 0.88).then(function(blob){
+      return blob.size <= 950000 ? blob : make(1000, 0.75);
+    });
+  }
+
+  function ocrSpaceRecognize(file, crop){
+    if (!OCR_SPACE_KEY) return Promise.reject(new Error("OCR.space key not set"));
+    return ocrSpaceImage(file, crop).then(function(blob){
+      var form = new FormData();
+      form.append("apikey", OCR_SPACE_KEY);
+      form.append("language", "kor");
+      form.append("scale", "true");
+      form.append("OCREngine", "1");
+      form.append("file", blob, "artifact.jpg");
+      var ctrl = new AbortController();
+      var timer = setTimeout(function(){ ctrl.abort(); }, 12000);
+      return fetch("https://api.ocr.space/parse/image", {method: "POST", body: form, signal: ctrl.signal})
+        .then(function(r){ return r.json(); })
+        .then(function(j){
+          if (!j || j.IsErroredOnProcessing || !j.ParsedResults || !j.ParsedResults[0]){
+            throw new Error((j && (Array.isArray(j.ErrorMessage) ? j.ErrorMessage.join(" ") : j.ErrorMessage)) || "OCR.space failed");
+          }
+          return j.ParsedResults[0].ParsedText || "";
+        })
+        .finally(function(){ clearTimeout(timer); });
+    });
+  }
+
+  // Resolves to {texts, crop}: texts is everything that was read, crop the area of a
+  // full-screen picture that was read (null for a whole-picture read).
+  function runOcr(file){
+    if (location.protocol === "file:"){
+      return Promise.reject({friendly: "HTML 파일을 직접 열면 인식 모델을 못 불러와요. 같은 폴더의 실행.bat 을 더블클릭해서 열어주세요"});
+    }
+    if (typeof Tesseract === "undefined"){
+      return Promise.reject({friendly: "tess 폴더를 찾을 수 없어요. 성유물 감정소.html 바로 옆에 tess 폴더가 있어야 해요"});
+    }
+    return Promise.all([getOcrWorker(), createImageBitmap(file)]).then(function(res){
+      var worker = res[0], W = res[1].width, H = res[1].height;
+      if (res[1].close) res[1].close();
+
+      // mode: "raw" (plain), "bin" (binarized) or "inv" (binarized, opposite polarity:
+      // banners with white headings sit inside otherwise light panels and come out
+      // inverted in the normal binarized read)
+      function pass(mode, scale, crop){
+        var img = mode === "raw" ? cropImage(file, crop || WHOLE, scale)
+                                 : binarizeImage(file, {scale: scale, crop: crop, invert: mode === "inv"});
+        return img.then(function(blob){ return worker.recognize(blob); })
+          .then(function(r){ return r.data.text || ""; });
+      }
+      // Reads `crop` until the substats and the slot are all found, at most three
+      // reads: `first` method, the other method, then the opposite polarity.
+      function readPasses(crop, first){
+        var readW = crop ? W * crop.w : W;
+        var scale = readW < 900 ? 2 : (readW < 1600 ? 1.5 : 1);
+        var steps = [first, first === "raw" ? "bin" : "raw", "inv"];
+        var texts = [], modes = [], data = null;
+        function localSteps(k){
+          if (k >= steps.length || (data && isComplete(data))) return Promise.resolve({texts: texts, modes: modes});
+          return pass(steps[k], scale, crop).then(function(t){
+            texts.push(t);
+            modes.push(steps[k]);
+            var d = parseOcrText(t);
+            data = data ? mergeParsed(data, d) : d;
+            return localSteps(k + 1);
+          });
+        }
+        if (!OCR_SPACE_KEY) return localSteps(0);
+        // Cloud engine first; anything short of a complete read falls through to the
+        // local engine untouched, so a bad photo or a used-up quota never blocks the user.
+        return ocrSpaceRecognize(file, crop).then(function(t){
+          texts.push(t);
+          modes.push("ocrspace");
+          data = parseOcrText(t);
+          if (isComplete(data)) return {texts: texts, modes: modes};
+          return localSteps(0);
+        }, function(){
+          return localSteps(0);
+        });
+      }
+
+      if (W / H < FULLSCREEN_MIN_RATIO){
+        return readPasses(null, "bin").then(function(r){
+          return {texts: r.texts, modes: r.modes, crop: null, scanNote: "카드만 잘린 사진으로 보고 사진 전체를 읽었어요"};
+        });
+      }
+
+      // Full screen: a sparse scan of the right half finds the substat rows (binarized
+      // first because it is quicker, plain if that finds nothing); the located panel is
+      // then read on its own.
+      function scan(raw){
+        var binScale = W * RIGHT_HALF.w < 900 ? 2 : 1;
+        var rawScale = H < 900 ? Math.min(2, 1080 / H) : 1;
+        return worker.setParameters({tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT}).then(function(){
+          return raw ? cropImage(file, RIGHT_HALF, rawScale) : binarizeImage(file, {scale: binScale, crop: RIGHT_HALF});
+        }).then(function(blob){
+          return worker.recognize(blob).then(function(r){
+            return locateCard(r.data.lines || [], RIGHT_HALF, blob.usedScale, W, H, raw ? 0 : BIN_PAD);
+          });
+        });
+      }
+      var how = "";
+      return scan(false).then(function(found){
+        if (found){ how = "카드 위치를 흑백 변환 훑기로 찾았어요"; return found; }
+        return scan(true).then(function(f2){
+          how = f2 ? "카드 위치를 원본 훑기로 찾았어요 (흑백 변환 훑기는 실패)" : "카드 위치를 못 찾아서 화면 오른쪽 절반 전체를 읽었어요";
+          return f2;
+        });
+      }).then(function(found){
+        var crop = found || RIGHT_HALF;
+        return worker.setParameters({tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK}).then(function(){
+          return readPasses(crop, found ? "raw" : "bin");
+        }).then(function(r){
+          return {texts: r.texts, modes: r.modes, scanNote: how,
+                  crop: {x: Math.round(crop.x * W), y: Math.round(crop.y * H), w: Math.round(crop.w * W), h: Math.round(crop.h * H)}};
+        });
+      });
+    });
+  }
+
+  // Artifact piece flavor names vary by set (e.g. "죽음의 깃털" vs "파멸의 깃털" are
+  // both "feather", just from different sets), so slot detection can't match a
+  // fixed name per slot — it infers from the main-stat line instead (see detectSlot).
+  var BASE_NAMES = [
+    // weak: the tail of the name alone, accepted only right before "+<value>" - it rescues
+    // rows whose first half was garbled (e.g. "X|HE} 피해+7.0%")
+    {names:["치명타 확률"], weak:["확률"], key:"cr"},
+    {names:["치명타 피해"], weak:["피해"], key:"cd"},
+    {names:["원소마스터리"], weak:["마스터리"], key:"em"},
+    {names:["원소충전효율"], weak:["충전효율"], key:"er"},
+    {names:["공격력"], keyPct:"atk_pct", keyFlat:"atk_flat"},
+    {names:["HP","체력"], keyPct:"hp_pct", keyFlat:"hp_flat"},
+    {names:["방어력"], keyPct:"def_pct", keyFlat:"def_flat"}
+  ];
+
+  // Rough limits for one substat value (1-6 rolls; lower bounds relaxed for pieces below
+  // 5 stars). A reading outside them is an OCR slip such as "26.4" read as "2" or "264".
+  var VALUE_RANGE = {
+    cr:[1.9,25], cd:[3.8,50], er:[3.2,34], em:[11,150],
+    atk_pct:[2.9,36], hp_pct:[2.9,36], def_pct:[3.6,45],
+    atk_flat:[10,120], hp_flat:[150,1900], def_flat:[11,140]
+  };
+  function plausible(key, value){
+    var r = VALUE_RANGE[key];
+    return !r || (value >= r[0] && value <= r[1]);
+  }
+
+  function detectSlot(head){
+    var sq = squeeze(head);
+    // the slot name printed under the piece title is the most reliable hint
+    if (/생명의꽃/.test(sq)) return "flower";
+    if (/죽음의깃털/.test(sq)) return "feather";
+    if (/시간의모래/.test(sq)) return "sands";
+    if (/공간의성배/.test(sq)) return "goblet";
+    if (/이성의왕관/.test(sq)) return "circlet";
+    // otherwise infer it from the main stat
+    if (/원소충전효[율을]/.test(sq)) return "sands";
+    if (/피해\s*보너스|물리\s*피해|원소\s*피해/.test(head)) return "goblet";
+    if (/치명타\s*확률|치명타\s*피해|치유\s*보너스/.test(head)) return "circlet";
+    var hasPct = /%/.test(head);
+    if (!hasPct && (sq.indexOf("HP") !== -1 || sq.indexOf("체력") !== -1)) return "flower";
+    if (!hasPct && sq.indexOf("공격력") !== -1) return "feather";
+    return null;
+  }
+
+  function squeeze(s){ return (s||"").replace(/\s+/g,""); }
+
+  function escapeRe(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+
+  function parseOcrText(text){
+    // Skip past the "+20" enhancement marker (main stat line comes before it);
+    // fall back to scanning the whole text if that marker wasn't recognized.
+    // The badge stands on its own; a "+16" glued to a stat name ("방어력+16") is a
+    // substat row, which matters when the badge itself was not read.
+    var enhanceMatch = null, badgeRe = /[+＋]\s*\d{1,2}(?![\d.,%])/g, bm;
+    while (!enhanceMatch && (bm = badgeRe.exec(text)) !== null){
+      if (!/[가-힣A-Za-z][ \t]*$/.test(text.slice(0, bm.index))) enhanceMatch = bm;
+    }
+    var headEnd, tailRaw;
+    if (enhanceMatch){
+      headEnd = enhanceMatch.index;
+      tailRaw = text.slice(enhanceMatch.index + enhanceMatch[0].length);
+    } else {
+      // no badge: the head is everything above the line of the first "+number"
+      var firstPlus = text.search(/[+＋]\s*\d/);
+      headEnd = firstPlus >= 0 ? text.lastIndexOf("\n", firstPlus) + 1 : text.length;
+      tailRaw = firstPlus >= 0 ? text.slice(headEnd) : text;
+    }
+    var slot = detectSlot(text.slice(0, headEnd));
+
+    // Drop set-bonus description lines ("○2세트: 원소 마스터리+80pt" etc.) — they
+    // often mention stat names too and would otherwise be mistaken for substats.
+    // A "세트" line starts an exclusion block that lasts until a fresh bullet-led
+    // line (a real substat row) is seen again.
+    var inSetBlock = false;
+    var tail = tailRaw.split("\n").filter(function(line){
+      if (/세트/.test(line)) { inSetBlock = true; return false; }
+      if (inSetBlock){
+        if (/^[·:•∙●○.\s]{0,2}(치명타|원소|공격력|HP|체력|방어력)/.test(line)) inSetBlock = false;
+        else return false;
+      }
+      return true;
+    }).join("\n");
+
+    // Find every occurrence of every known stat name anywhere in the remaining
+    // text (not line-by-line: OCR often merges multiple bullet lines together,
+    // or inserts stray spaces inside a single word), then take the number
+    // immediately following each match, in reading order.
+    var matches = [];
+    BASE_NAMES.forEach(function(b){
+      [{list: b.names, weak: false}, {list: b.weak || [], weak: true}].forEach(function(group){
+        group.list.forEach(function(name){
+          // stray marks OCR puts inside a word ("충전'효율") are skipped like spaces
+          var pattern = name.replace(/\s+/g, "").split("").map(escapeRe).join("[\\s'’‘\"`·ㆍ|_-]*");
+          var re = new RegExp(pattern, "g");
+          var m;
+          while ((m = re.exec(tail)) !== null){
+            matches.push({pos: m.index, end: m.index + m[0].length, base: b, weak: group.weak});
+          }
+        });
+      });
+    });
+    matches.sort(function(a,c){ return a.pos - c.pos; });
+
+    function readMatch(mt, strict){
+      if (mt.weak && !strict) return null;
+      var lineStart = tail.lastIndexOf("\n", mt.pos - 1) + 1;
+      var prefix = tail.slice(lineStart, mt.pos);
+      // "2세트: 원소 마스터리+80" style set-bonus text, even when "세트" itself was misread
+      if (/[A-Za-z0-9가-힣]\s*[:：]\s*$/.test(prefix)) return null;
+      var windowText = tail.slice(mt.end, mt.end + 20);
+      // real substat rows are always "<stat>+<value>"; the first pass insists on the "+"
+      if (strict && !/^\s*[+＋]/.test(windowText)) return null;
+      // the decimal point is often misread as a similar-looking mark (: · ㆍ ' etc.)
+      var numMatch = windowText.match(/(\d+[.,:·ㆍ'’]\d+|\d+)/);
+      if (!numMatch) return null;
+      // Percent substats always print exactly one decimal ("3.5%") and flat ones are
+      // whole numbers. OCR often reads the "%" as "9", "8", "96" or "86" and glues it
+      // on ("3.596"), so keep only the first decimal digit.
+      var decMatch = numMatch[1].match(/^(\d+)[.,:·ㆍ'’](\d+)$/);
+      var hasDecimal = !!decMatch;
+      var value = hasDecimal ? parseFloat(decMatch[1] + "." + decMatch[2].charAt(0)) : parseInt(numMatch[1], 10);
+      if (isNaN(value)) return null;
+      var afterAll = windowText.slice(numMatch.index + numMatch[1].length);
+      // without a "+", a number followed by more Korean words is a sentence
+      // ("공격력이 14% 증가한다"), not a substat
+      if (!strict && /^\s*(%|pt)?\s*[가-힣]/i.test(afterAll)) return null;
+      // ...and the number has to sit right next to the name, not on a later line
+      if (!strict && /[\n가-힣]/.test(windowText.slice(0, numMatch.index))) return null;
+      var after = afterAll.slice(0, 2);
+      var key = mt.base.key || ((hasDecimal || after.indexOf("%") !== -1) ? mt.base.keyPct : mt.base.keyFlat);
+      if (!plausible(key, value)) return null;
+      return {key: key, value: value, end: mt.end + numMatch.index + numMatch[1].length + 1};
+    }
+
+    // An artifact never has the same substat twice, so each key is taken once.
+    var substats = [], usedKeys = {}, usedPos = {}, spans = [];
+    [true, false].forEach(function(strict){
+      var consumedUntil = -1;
+      for (var i2=0; i2<matches.length && substats.length<4; i2++){
+        var mt = matches[i2];
+        if (usedPos[mt.pos] || mt.pos < consumedUntil) continue;
+        var r = readMatch(mt, strict);
+        if (!r || usedKeys[r.key]) continue;
+        substats.push({key: r.key, value: r.value});
+        usedKeys[r.key] = true;
+        usedPos[mt.pos] = true;
+        spans.push({from: mt.pos, to: r.end});
+        consumedUntil = r.end;
+      }
+    });
+
+    // Rows whose stat name was too garbled to match ("ㆍ치 멍라님해+12.4%"): give them to
+    // the unused stat whose name looks most like the garbled text, if one clearly does.
+    if (substats.length < 4){
+      var offset = 0;
+      tail.split("\n").forEach(function(line){
+        var start = offset, end = offset + line.length;
+        offset = end + 1;
+        if (substats.length >= 4) return;
+        if (spans.some(function(sp){ return sp.from < end && sp.to > start; })) return;
+        var m = line.match(/^(.*?)[+＋]\s*(\d+[.,]\d+|\d+)/);
+        if (!m) return;
+        var garble = m[1].replace(/[^가-힣A-Za-z]/g, "");
+        if (garble.length < 2 || garble.length > 12) return;
+        var dm = m[2].match(/^(\d+)[.,](\d+)$/);
+        var val = dm ? parseFloat(dm[1] + "." + dm[2].charAt(0)) : parseInt(m[2], 10);
+        var scored = [];
+        BASE_NAMES.forEach(function(b){
+          var key = b.key ? (((b.key !== "em") === !!dm) ? b.key : null) : (dm ? b.keyPct : b.keyFlat);
+          if (!key || usedKeys[key] || !plausible(key, val)) return;
+          var best = 0;
+          b.names.forEach(function(n){ best = Math.max(best, similarity(garble, n.replace(/\s+/g, ""))); });
+          scored.push({key: key, s: best});
+        });
+        scored.sort(function(a, b){ return b.s - a.s; });
+        if (scored.length && scored[0].s >= 0.34 && (scored.length < 2 || scored[0].s - scored[1].s >= 0.12)){
+          substats.push({key: scored[0].key, value: val});
+          usedKeys[scored[0].key] = true;
+        }
+      });
+    }
+    return {slot: slot, substats: substats};
+  }
+
+  // 1 = identical, 0 = nothing in common (edit distance relative to the longer text)
+  function similarity(a, b){
+    var prev = [], cur, i, j;
+    for (j = 0; j <= b.length; j++) prev[j] = j;
+    for (i = 1; i <= a.length; i++){
+      cur = [i];
+      for (j = 1; j <= b.length; j++){
+        cur[j] = Math.min(prev[j] + 1, cur[j-1] + 1, prev[j-1] + (a.charAt(i-1) === b.charAt(j-1) ? 0 : 1));
+      }
+      prev = cur;
+    }
+    return 1 - prev[b.length] / Math.max(a.length, b.length);
+  }
+
+  // Two OCR passes at different upscale factors often garble different words;
+  // merge them by substat key (each key can only appear once per artifact).
+  function mergeParsed(a, b){
+    var first = (b.substats.length > a.substats.length) ? b : a;
+    var second = (first === a) ? b : a;
+    var merged = first.substats.slice(), keys = {};
+    merged.forEach(function(s){ keys[s.key] = true; });
+    second.substats.forEach(function(s){
+      if (merged.length < 4 && !keys[s.key]){ merged.push(s); keys[s.key] = true; }
+    });
+    return {slot: first.slot || second.slot, substats: merged};
+  }
+
+  function setPhotoStatus(text, isErr){
+    photoStatus.hidden = !text;
+    photoStatus.textContent = text || "";
+    photoStatus.className = "photo-status" + (isErr ? " err" : "");
+  }
+
+  // The uploaded picture, viewable in a popup.
+  var photoURL = null;
+  function setPhotoPreview(file){
+    if (photoURL) URL.revokeObjectURL(photoURL);
+    photoURL = file ? URL.createObjectURL(file) : null;
+    photoModalImg.src = photoURL || "";
+    photoViewBtn.hidden = !photoURL;
+  }
+  // ---------- popups (original photo, calculation method, character table) ----------
+  var openedModal = null, modalReturn = null;
+  function openModal(el, returnTo){
+    el.hidden = false;
+    openedModal = el;
+    modalReturn = returnTo;
+    document.body.style.overflow = "hidden";
+    var closeBtn = el.querySelector(".modal__close, .dialog__close");
+    if (closeBtn) closeBtn.focus();
+  }
+  function closeModal(){
+    if (!openedModal) return;
+    openedModal.hidden = true;
+    openedModal = null;
+    document.body.style.overflow = "";
+    if (modalReturn) modalReturn.focus();
+  }
+  Array.prototype.forEach.call(document.querySelectorAll(".modal"), function(m){
+    m.addEventListener("click", function(e){
+      if (e.target === m || e.target.closest(".modal__close, .dialog__close")) closeModal();
+    });
+  });
+  document.addEventListener("keydown", function(e){ if (e.key === "Escape"){ closeModal(); closeInfo(); } });
+  photoViewBtn.addEventListener("click", function(){ openModal(photoModal, photoViewBtn); });
+
+  // ---------- info popover (보정 / 부옵션 효율 / 치명타 붙은 횟수) ----------
+  var INFO_TEXT = {
+    corr: "유효한 옵션이지만 타 옵션에 비해 효율이 떨어지는 경우 선택합니다. 선택한 옵션은 점수를 절반(×0.5)으로 계산합니다.",
+    eff: "부옵션이 얼마나 잘 붙었는지 나타내는 값입니다. 유효로 체크했는지와 상관없이 부옵션 4개를 모두 계산합니다.",
+    crit: "부옵션에 치명타 확률·피해가 몇 번 붙었는지 보여줍니다. 치명타 옵션을 쓰는 캐릭터는 이 값이 5를 넘어야 종결로 봅니다. (단, 치명타가 주옵션인 왕관은 4 이상)"
+  };
+  var infoPopover = document.getElementById("infoPopover");
+  var infoOpenBtn = null;
+  function closeInfo(){
+    if (!infoOpenBtn) return;
+    infoPopover.hidden = true;
+    infoOpenBtn.setAttribute("aria-expanded", "false");
+    infoOpenBtn = null;
+  }
+  function openInfo(btn){
+    infoPopover.textContent = INFO_TEXT[btn.dataset.info] || "";
+    infoPopover.hidden = false;
+    infoOpenBtn = btn;
+    btn.setAttribute("aria-expanded", "true");
+    var r = btn.getBoundingClientRect();
+    var pw = infoPopover.offsetWidth;
+    var left = Math.min(Math.max(8, r.left + r.width / 2 - pw / 2), window.innerWidth - pw - 8);
+    var top = r.bottom + 8;
+    if (top + infoPopover.offsetHeight > window.innerHeight - 8) top = r.top - infoPopover.offsetHeight - 8;
+    infoPopover.style.left = left + "px";
+    infoPopover.style.top = top + "px";
+  }
+  document.addEventListener("click", function(e){
+    var btn = e.target.closest(".info-btn");
+    if (btn){ if (infoOpenBtn === btn) closeInfo(); else openInfo(btn); return; }
+    if (infoOpenBtn && !e.target.closest("#infoPopover")) closeInfo();
+  });
+  window.addEventListener("scroll", closeInfo, {passive: true, capture: true});
+  window.addEventListener("resize", closeInfo);
+
+  var methodBtn = document.getElementById("methodBtn");
+  var tableBtn = document.getElementById("tableBtn");
+  methodBtn.addEventListener("click", function(){ openModal(document.getElementById("methodModal"), methodBtn); });
+  tableBtn.addEventListener("click", function(){
+    buildTable();
+    openModal(document.getElementById("tableModal"), tableBtn);
+  });
+
+  // The memo (CHAR_TABLE), one block per stat with the names as chips.
+  var tableBuilt = false;
+  function buildTable(){
+    if (tableBuilt) return;
+    tableBuilt = true;
+    var body = document.getElementById("tableBody");
+    CHAR_TABLE.forEach(function(sec){
+      var box = document.createElement("section");
+      box.className = "table-sec";
+      var h = document.createElement("h3");
+      h.textContent = sec.title;
+      box.appendChild(h);
+      sec.groups.forEach(function(names){
+        var line = document.createElement("p");
+        line.className = "table-group";
+        names.forEach(function(n){
+          var chip = document.createElement("span");
+          chip.className = "chip" + (/돌/.test(n) ? " chip--cond" : "");
+          chip.textContent = n;
+          line.appendChild(chip);
+        });
+        box.appendChild(line);
+      });
+      sec.notes.forEach(function(t){
+        var note = document.createElement("p");
+        note.className = "table-note";
+        note.textContent = t;
+        box.appendChild(note);
+      });
+      body.appendChild(box);
+    });
+  }
+  document.getElementById("tableSearch").addEventListener("input", function(){
+    var q = this.value.trim();
+    Array.prototype.forEach.call(document.querySelectorAll("#tableBody .table-sec"), function(sec){
+      var secAny = false;
+      Array.prototype.forEach.call(sec.querySelectorAll(".table-group"), function(line){
+        var lineAny = false;
+        Array.prototype.forEach.call(line.querySelectorAll(".chip"), function(chip){
+          var show = !q || chip.textContent.indexOf(q) !== -1;
+          chip.hidden = !show;
+          if (show) lineAny = true;
+        });
+        line.hidden = !lineAny;
+        if (lineAny) secAny = true;
+      });
+      sec.hidden = !secAny;
+    });
+  });
+
+  // Reads one picture: from the file picker, a drop, or a paste.
+  function processPhoto(file){
+    if (photoInput.disabled) return;   // still busy with the previous one
+    photoInput.disabled = true;
+    manualBtn.disabled = true;
+    photoBtnLabel.textContent = "인식 중...";
+    photoBtnSub.hidden = true;
+    setPhotoStatus("", false);
+    setPhotoPreview(file);
+    runOcr(file).then(function(res){
+      var texts = res.texts;
+      var data = texts.map(parseOcrText).reduce(mergeParsed);
+      console.debug("OCR", res);
+      // before anything was entered, a slot picked by hand stays if the photo does not show one
+      setSlot(data.slot || (mode === "idle" ? currentSlot : null));
+      var found = 0;
+      for (var i=0;i<4;i++){
+        var pair = data.substats[i];
+        document.getElementById("subtype-"+i).value = pair ? pair.key : "";
+        document.getElementById("subval-"+i).value = pair ? pair.value : "";
+        if (pair) found++;
+      }
+      if (!found){
+        setMode("edit");
+        setPhotoStatus("부옵션을 찾지 못했어요. 직접 입력해주세요", true);
+      } else if (!currentSlot){
+        setMode("locked");
+        setPhotoStatus("착용 부위를 인식하지 못했어요. 착용 부위를 선택해주세요", true);
+      } else {
+        setMode("locked");
+        setPhotoStatus(CHECK_MSG, false);
+        revealResult();
+      }
+    }).catch(function(e){
+      console.error(e);
+      resetOcrWorker();
+      var detail = (e && e.friendly) || (typeof e === "string" ? e : (e && e.message)) || "";
+      setPhotoStatus(e && e.friendly ? detail : "인식에 실패했어요" + (detail ? " (" + String(detail).slice(0, 140) + ")" : "") + ". 다시 시도해주세요", true);
+    }).finally(function(){
+      photoBtnLabel.textContent = PHOTO_LABEL;
+      showPhotoSub();
+      photoInput.disabled = false;
+      manualBtn.disabled = false;
+      photoInput.value = "";
+    });
+  }
+
+  photoInput.addEventListener("change", function(){
+    var file = photoInput.files && photoInput.files[0];
+    if (file) processPhoto(file);
+  });
+
+  // Drag a picture anywhere onto the page (dropping on the page would otherwise
+  // make the browser open the file and leave the calculator).
+  var inputCard = document.getElementById("inputCard");
+  var dragDepth = 0;
+  function hasFiles(e){
+    var types = e.dataTransfer && e.dataTransfer.types;
+    return !!types && Array.prototype.indexOf.call(types, "Files") !== -1;
+  }
+  function setDragOver(on){
+    var show = on && !photoInput.disabled;
+    inputCard.classList.toggle("drag-over", show);
+    if (!photoInput.disabled) photoBtnLabel.textContent = show ? "여기에 놓으세요" : PHOTO_LABEL;
+  }
+  window.addEventListener("dragenter", function(e){
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragDepth++;
+    setDragOver(true);
+  });
+  window.addEventListener("dragover", function(e){
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  });
+  window.addEventListener("dragleave", function(e){
+    if (!hasFiles(e)) return;
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (!dragDepth) setDragOver(false);
+  });
+  window.addEventListener("drop", function(e){
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragDepth = 0;
+    setDragOver(false);
+    var file = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (!file) return;
+    if (!/^image\//.test(file.type)){ setPhotoStatus("이미지 파일만 넣을 수 있어요", true); return; }
+    processPhoto(file);
+  });
+
+  // Ctrl+V with a picture on the clipboard (e.g. a Win+Shift+S screenshot). Text
+  // pastes (into the character box) are left alone.
+  document.addEventListener("paste", function(e){
+    var items = (e.clipboardData && e.clipboardData.items) || [];
+    for (var i = 0; i < items.length; i++){
+      if (items[i].kind === "file" && /^image\//.test(items[i].type)){
+        var file = items[i].getAsFile();
+        if (file){ e.preventDefault(); processPhoto(file); return; }
+      }
+    }
+  });
+
+  // ---------- boot ----------
+  setMode("idle");
+})();
+</script>
+</body></html>

@@ -1,0 +1,432 @@
+/* Genshin build card — akasha-style layout
+   Base size 980 x 430 px. Scale via the --ak-scale variable (set by card.js). */
+
+/* Card font: Nanum Gothic ExtraBold (SIL Open Font License), shipped in fonts/ */
+@font-face {
+  font-family: "NanumGothicExtraBold";
+  src: url("fonts/NanumGothicExtraBold.woff2") format("woff2"),
+       url("fonts/NanumGothicExtraBold.ttf") format("truetype");
+  font-display: swap;
+}
+
+.ak-wrap {
+  --ak-scale: 1;
+  width: calc(980px * var(--ak-scale));
+  height: calc(430px * var(--ak-scale));
+  position: relative;
+}
+
+.ak-card {
+  --ak-accent: #c9a2ff;
+  --ak-text: #ffffff;
+  --ak-muted: rgba(255, 255, 255, 0.55);
+  --ak-panel: rgba(12, 6, 26, 0.45);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 980px;
+  height: 430px;
+  transform: scale(var(--ak-scale));
+  transform-origin: top left;
+  font-family: "NanumGothicExtraBold", "Malgun Gothic", sans-serif;
+  color: var(--ak-text);
+  user-select: none;
+  font-synthesis: none;
+}
+
+.ak-card * { box-sizing: border-box; }
+
+/* ---------- background + art ---------- */
+.ak-bg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 980px;
+  height: 395px;
+  border-radius: 10px;
+  border: 1px solid var(--ak-el, #c29bff); /* element colour, no glow */
+  overflow: hidden;
+}
+.ak-bg canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ak-bg-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+.ak-art {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 430px;
+  height: 395px;
+  object-fit: cover;
+  transform: scale(1.25); /* zoom on the splash art */
+  transform-origin: 50% 32%;
+  -webkit-mask-image: linear-gradient(90deg, #000 72%, transparent 100%);
+  mask-image: linear-gradient(90deg, #000 72%, transparent 100%);
+}
+.ak-art-shade {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 430px;
+  height: 395px;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0) 25%),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0) 30%);
+  -webkit-mask-image: linear-gradient(90deg, #000 60%, transparent 100%);
+  mask-image: linear-gradient(90deg, #000 60%, transparent 100%);
+  pointer-events: none;
+}
+
+/* ---------- name block ---------- */
+.ak-name {
+  position: absolute;
+  left: 24px;
+  top: 16px;
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+.ak-name b { font-size: 24px; font-weight: 800; letter-spacing: 0.5px; }
+.ak-name span { font-size: 12px; opacity: 0.85; }
+.ak-level {
+  position: absolute;
+  left: 24px;
+  top: 50px;
+  font-size: 15px;
+  font-weight: 700;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+.ak-level i { font-style: normal; color: var(--ak-muted); }
+.ak-friend {
+  position: absolute;
+  left: 24px;
+  top: 72px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+.ak-friend svg, .ak-friend .ak-ic { width: 18px; height: 18px; }
+.ak-uid {
+  position: absolute;
+  left: 60px;
+  top: 292px;
+  font-size: 12px;
+  font-weight: 700;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* nickname + UID, small, top-right corner */
+.ak-owner {
+  position: absolute;
+  right: 14px;
+  top: 10px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+}
+.ak-owner .sep { margin: 0 5px; opacity: 0.6; }
+
+/* ---------- constellations ---------- */
+.ak-cons {
+  position: absolute;
+  left: 16px;
+  top: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.ak-con {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(20, 10, 40, 0.75);
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.ak-con img { width: 22px; height: 22px; }
+.ak-con.locked img { opacity: 0.25; }
+/* unlocked constellations: glowing border in the element colour */
+.ak-con:not(.locked) {
+  border: 2px solid var(--ak-el-solid, #c79dff);
+  box-shadow: 0 0 12px 2px var(--ak-el-glow, rgba(199, 157, 255, 0.6)), inset 0 0 8px var(--ak-el-glow, rgba(199, 157, 255, 0.6));
+}
+.ak-con.locked::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: no-repeat center / contain
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h1zm2 0h6V7a3 3 0 0 0-6 0v3z'/%3E%3C/svg%3E");
+}
+
+/* ---------- talents ---------- */
+.ak-talents {
+  position: absolute;
+  left: 360px;
+  top: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+.ak-talent { display: flex; flex-direction: column; align-items: center; }
+.ak-talent .ic {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(20, 10, 40, 0.7);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ak-talent .ic img { width: 28px; height: 28px; }
+/* level badge sits right under the icon, slightly overlapping it */
+.ak-talent .lv {
+  position: relative;
+  margin-top: -5px;
+  min-width: 20px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 14px;
+  padding: 0 5px;
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.55);
+}
+.ak-talent .lv.boosted { color: #7fd3ff; }
+.ak-talent .lv.max { color: #ffd780; }
+
+/* ---------- middle: weapon ---------- */
+.ak-weapon {
+  position: absolute;
+  left: 425px;
+  top: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.ak-weapon .wicon { position: relative; width: 70px; height: 70px; }
+.ak-weapon .wicon img { width: 70px; height: 70px; object-fit: contain; }
+.ak-weapon .stars {
+  position: absolute;
+  left: 50%;
+  bottom: -2px;
+  transform: translateX(-50%);
+  color: #ffcc32;
+  font-size: 11px;
+  letter-spacing: -1px;
+  white-space: nowrap;
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+}
+.ak-weapon .wname { font-size: 15px; font-weight: 800; margin-bottom: 4px; }
+.ak-weapon .row { display: flex; gap: 5px; margin-top: 4px; }
+.ak-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+}
+.ak-chip.dark { background: rgba(0, 0, 0, 0.4); }
+.ak-chip i { font-style: normal; color: var(--ak-muted); }
+.ak-chip svg, .ak-chip .ak-ic { width: 14px; height: 14px; }
+
+/* ---------- middle: stats ---------- */
+.ak-stats {
+  position: absolute;
+  left: 425px;
+  top: 92px;
+  width: 285px;
+  height: 214px; /* fixed box: rows share it evenly, however many there are */
+  display: flex;
+  flex-direction: column;
+}
+.ak-stat {
+  display: flex;
+  align-items: center;
+  flex: 1 1 0;
+  min-height: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+.ak-stat svg, .ak-stat .ak-ic { width: 16px; height: 16px; margin-right: 7px; flex: none; }
+.ak-stat .label { flex: 1; white-space: nowrap; }
+.ak-stat .val { text-align: right; font-size: 14px; }
+.ak-stat.set { color: #9df29d; font-size: 12.5px; }
+.ak-stat.set .val { font-size: 12.5px; }
+.ak-stat.set .set-ic { width: 20px; height: 20px; margin: 0 5px 0 -2px; object-fit: contain; flex: none; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6)); }
+
+/* ---------- right: rating grade ---------- */
+.ak-rating {
+  position: absolute;
+  left: 718px;
+  top: 62px;
+  width: 250px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.ak-rating .gem-wrap {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* the diamond: a rounded square turned 45° */
+.ak-rating .gem {
+  position: absolute;
+  width: 108px;
+  height: 108px;
+  border-radius: 12px;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, var(--g2) 0%, var(--g1) 55%, var(--g1) 100%);
+  box-shadow: 0 0 22px 2px var(--g1), 0 0 6px rgba(255, 255, 255, 0.5) inset;
+  overflow: hidden;
+}
+/* inner white frame */
+.ak-rating .gem::before {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  border-radius: 7px;
+  border: 2.5px solid rgba(255, 255, 255, 0.85);
+}
+/* glossy highlight on the upper half */
+.ak-rating .gem::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(225deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.12) 40%, rgba(255, 255, 255, 0) 55%);
+}
+.ak-rating .letter {
+  position: relative;
+  font-weight: 800;
+  font-size: 66px;
+  line-height: 1;
+  /* trim the line box to the capital letter itself, so centring doesn't depend on
+     how each OS reads the font's ascent/descent (this was pushing the letter off-centre) */
+  text-box: trim-both cap alphabetic;
+  color: #fff;
+  /* coloured outline around the white letter */
+  text-shadow:
+    2.5px 0 0 var(--g-dark, #4c515c), -2.5px 0 0 var(--g-dark, #4c515c), 0 2.5px 0 var(--g-dark, #4c515c), 0 -2.5px 0 var(--g-dark, #4c515c),
+    1.8px 1.8px 0 var(--g-dark, #4c515c), -1.8px 1.8px 0 var(--g-dark, #4c515c), 1.8px -1.8px 0 var(--g-dark, #4c515c), -1.8px -1.8px 0 var(--g-dark, #4c515c),
+    0 3px 8px rgba(0, 0, 0, 0.35);
+}
+.ak-rating .letter.two { font-size: 52px; letter-spacing: -1px; }
+.ak-rating .score.na { font-size: 24px; color: var(--ak-muted); }
+.ak-rating .score {
+  font-size: 30px;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+.ak-rating .score i { font-style: normal; font-size: 16px; margin-left: 3px; color: var(--ak-muted); }
+.ak-cv {
+  position: absolute;
+  right: 12px;
+  top: 372px;
+  font-size: 11px;
+  font-weight: 800;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+/* ---------- artifacts ---------- */
+.ak-arts {
+  position: absolute;
+  left: 60px;
+  top: 314px;
+  display: flex;
+  gap: 16px;
+}
+.ak-art-card {
+  position: relative;
+  width: 157px;
+  height: 112px;
+  border-radius: 6px;
+  /* akasha style: black base + its own darkened copy of the element background */
+  background: #000;
+  border: 2px solid var(--ak-el, #c29bff);
+  box-shadow: 0 0 16px 1px var(--ak-el-glow, rgba(194, 155, 255, 0.6)), 0 0 4px var(--ak-el-glow, rgba(194, 155, 255, 0.6));
+  overflow: hidden;
+}
+/* inner glow along the border (drawn on top of the card's own background) */
+.ak-art-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 4px; /* card radius (6px) minus border (2px), so the corners line up */
+  box-shadow: inset 0 0 14px 1px var(--ak-el-glow, rgba(194, 155, 255, 0.6));
+  pointer-events: none;
+}
+.ak-art-card .abg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center 70%;
+  filter: brightness(0.7);
+  opacity: 0.9;
+}
+/* akasha style: big icon that runs off the card's left/top edge and fades out to the right */
+.ak-art-card .aicon {
+  position: absolute;
+  left: -30px;
+  top: -14px;
+  width: 144px;
+  height: 144px;
+  object-fit: contain;
+  -webkit-mask-image: linear-gradient(90deg, #000 45%, transparent 78%);
+  mask-image: linear-gradient(90deg, #000 45%, transparent 78%);
+}
+.ak-art-card .main {
+  position: absolute;
+  left: 5px;
+  bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+.ak-art-card .main svg, .ak-art-card .main .ak-ic { width: 13px; height: 13px; }
+.ak-art-card .subs {
+  position: absolute;
+  right: 10px;
+  top: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ak-sub {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: 19px;
+  font-size: 12px;
+  font-weight: 600;
+  gap: 4px;
+}
+.ak-sub svg, .ak-sub .ak-ic { width: 14px; height: 14px; }
+.ak-sub .v { min-width: 40px; }
+
+.ak-art-card .subs { position: absolute; }
+.ak-sub { position: relative; }
+
